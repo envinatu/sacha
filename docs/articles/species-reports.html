@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>05. Informes por especie y personalización en Quarto • sacha</title>
+<title>05. Species reports and Quarto customization • sacha</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="48x48" href="../favicon-48x48.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="05. Informes por especie y personalización en Quarto">
+<script src="../pkgdown.js"></script><meta property="og:title" content="05. Species reports and Quarto customization">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -54,19 +54,19 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/clb.html">02. Datos taxonómicos y nomenclaturales de ChecklistBank</a>
+      <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Primeros pasos y flujos de datos</a>
+      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. Fotografías de observaciones de iNaturalist</a>
+      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. Mapas de GBIF y áreas documentadas</a>
+      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
     </li>
     <li>
-      <a href="../articles/species-reports.html">05. Informes por especie y personalización en Quarto</a>
+      <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
 </li>
@@ -91,8 +91,8 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>05. Informes por especie y personalización en
-Quarto</h1>
+      <h1 data-toc-skip>05. Species reports and Quarto
+customization</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/envinatu/sacha/blob/HEAD/vignettes/species-reports.Rmd" class="external-link"><code>vignettes/species-reports.Rmd</code></a></small>
@@ -103,19 +103,19 @@ Quarto</h1>
     
     
 <div class="section level2">
-<h2 id="informes-compuestos">Informes compuestos<a class="anchor" aria-label="anchor" href="#informes-compuestos"></a>
+<h2 id="combined-reports">Combined reports<a class="anchor" aria-label="anchor" href="#combined-reports"></a>
 </h2>
-<p>Las funciones de informe agrupan accesores ya disponibles. Mantienen
-el formato y las reglas de cada sección, de modo que se puede empezar
-con un informe estándar y pasar a una composición propia cuando se
-necesita controlar el contenido o el orden.</p>
-<p>Los fragmentos de esta viñeta no se ejecutan durante su construcción:
-algunos requieren servicios externos y otros requieren archivos
-guardados localmente. No se incluyen credenciales, rutas del equipo del
-usuario ni descargas.</p>
+<p>Report functions combine existing accessors. They preserve each
+section’s format and rules, so users can start with a standard report
+and build a custom composition when they need control over its content
+or order.</p>
+<p>The code chunks in this vignette are not executed when it is built:
+some require external services, while others require locally saved
+files. No credentials, user-specific file paths, or downloads are
+included.</p>
 </div>
 <div class="section level2">
-<h2 id="elegir-el-informe">Elegir el informe<a class="anchor" aria-label="anchor" href="#elegir-el-informe"></a>
+<h2 id="choosing-a-report">Choosing a report<a class="anchor" aria-label="anchor" href="#choosing-a-report"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -124,60 +124,56 @@ usuario ni descargas.</p>
 <col width="33%">
 </colgroup>
 <thead><tr class="header">
-<th align="left">Función</th>
-<th align="left">Secciones</th>
-<th align="left">Consideración sobre el origen</th>
+<th align="left">Function</th>
+<th align="left">Sections</th>
+<th align="left">Source considerations</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left"><code><a href="../reference/sacha_clb_report.html">sacha_clb_report()</a></code></td>
-<td align="left">Nombre aceptado, primera publicación, indexaciones,
-nombres comunes, clasificación, sinónimos y combinaciones, áreas
-documentadas y referencias.</td>
-<td align="left">Las secciones de ChecklistBank conservan el
-comportamiento web configurado.</td>
+<td align="left">Accepted name, first publication, indexations, common
+names, classification, synonyms and combinations, documented areas, and
+references.</td>
+<td align="left">ChecklistBank sections retain the configured web
+behavior.</td>
 </tr>
 <tr class="even">
 <td align="left"><code><a href="../reference/sacha_spatial_report.html">sacha_spatial_report()</a></code></td>
-<td align="left">Áreas documentadas y mapa de GBIF recortado.</td>
+<td align="left">Documented areas and a cropped GBIF map.</td>
 <td align="left">
-<code>language</code> se aplica al texto de áreas; los
-argumentos adicionales se reenvían a
-<code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>.</td>
+<code>language</code> applies to the area text;
+additional arguments are passed to <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>.</td>
 </tr>
 <tr class="odd">
 <td align="left"><code><a href="../reference/sacha_report.html">sacha_report()</a></code></td>
-<td align="left">Nombre, primera publicación, imágenes, indexaciones,
-nombres comunes, clasificación, sinonimia, áreas, mapa de GBIF y
-referencias.</td>
+<td align="left">Name, first publication, images, indexations, common
+names, classification, synonymy, areas, GBIF map, and references.</td>
 <td align="left">
-<code>source = "local"</code> es el valor
-predeterminado para imágenes y mapa; <code>source = "web"</code>
-solicita ambos servicios en línea. Las secciones ChecklistBank siguen
-usando su fuente web.</td>
+<code>source = "local"</code> is the default for images
+and maps; <code>source = "web"</code> requests both services online.
+ChecklistBank sections continue to use their web source.</td>
 </tr>
 </tbody>
 </table>
-<p>Para <code><a href="../reference/sacha_report.html">sacha_report()</a></code>, <code>source = "local"</code> exige
-que existan archivos de iNaturalist y GBIF compatibles con la especie y
-los filtros. Si el mapa recortado requiere un límite, se debe
-proporcionarlo o haberlo configurado. Incluso con archivos locales, las
-secciones de ChecklistBank pueden consultar la web; por tanto, el
-informe no es completamente offline.</p>
-<p>Los informes <code>_md</code> emiten marcado para el documento. En
-Quarto o R Markdown, <code>results='asis'</code> permite que el
-renderizador procese ese marcado y las figuras. Las opciones de figura y
-referencias cruzadas se explican en las viñetas de <a href="spatial-maps.html">mapas</a> e <a href="inaturalist-images.html">imágenes</a>.</p>
+<p>For <code><a href="../reference/sacha_report.html">sacha_report()</a></code>, <code>source = "local"</code>
+requires iNaturalist and GBIF files that match the species and filters.
+If the cropped map requires a boundary, provide one or configure it in
+advance. ChecklistBank sections may still query the web even when local
+files are used, so the report is not fully offline.</p>
+<p>The <code>_md</code> reports emit document markup. In Quarto or R
+Markdown, <code>results='asis'</code> lets the renderer process that
+markup and its figures. Figure options and cross-references are covered
+in the <a href="spatial-maps.html">maps</a> and <a href="inaturalist-images.html">images</a> vignettes.</p>
 </div>
 <div class="section level2">
-<h2 id="valores-compartidos-y-argumentos-explícitos">Valores compartidos y argumentos explícitos<a class="anchor" aria-label="anchor" href="#valores-compartidos-y-argumentos-expl%C3%ADcitos"></a>
+<h2 id="shared-values-and-explicit-arguments">Shared values and explicit arguments<a class="anchor" aria-label="anchor" href="#shared-values-and-explicit-arguments"></a>
 </h2>
-<p><code><a href="../reference/sacha_arg_configure.html">sacha_arg_configure()</a></code> permite preparar argumentos
-comunes para llamadas posteriores. Un argumento escrito en la llamada de
-un informe tiene prioridad sobre el valor compartido. Los argumentos de
-cada sección conservan el significado y los valores aceptados por su
-función original; <code><a href="../reference/sacha_report.html">?sacha_report</a></code> enumera los nombres
-reenviados y los accesores correspondientes documentan cómo usarlos.</p>
+<p><code><a href="../reference/sacha_arg_configure.html">sacha_arg_configure()</a></code> sets shared arguments for
+subsequent calls. An argument supplied directly to a report takes
+precedence over its shared value. Each section’s arguments retain the
+meaning and accepted values of the underlying function;
+<code><a href="../reference/sacha_report.html">?sacha_report</a></code> lists the forwarded names, and the
+corresponding accessors document how to use them.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_arg_configure.html">sacha_arg_configure</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
@@ -194,57 +190,53 @@ reenviados y los accesores correspondientes documentan cómo usarlos.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sacha_clear_cache.html">sacha_clear_cache</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>El primer informe hereda los valores configurados. En el segundo, los
-argumentos explícitos sustituyen los valores compartidos del mismo
-nombre. <code><a href="../reference/sacha_clear_cache.html">sacha_clear_cache()</a></code> restaura las configuraciones y
-elimina esos valores compartidos, pero no borra archivos ya guardados ni
-reinicia los controles de volumen y pausa de descargas de
-iNaturalist.</p>
+<p>The first report inherits the configured values. In the second,
+explicit arguments replace shared values with the same names.
+<code><a href="../reference/sacha_clear_cache.html">sacha_clear_cache()</a></code> resets configuration and removes shared
+values, but does not delete saved files or reset iNaturalist
+download-volume and delay controls.</p>
 </div>
 <div class="section level2">
-<h2 id="composición-avanzada-por-secciones">Composición avanzada por secciones<a class="anchor" aria-label="anchor" href="#composici%C3%B3n-avanzada-por-secciones"></a>
+<h2 id="advanced-section-composition">Advanced section composition<a class="anchor" aria-label="anchor" href="#advanced-section-composition"></a>
 </h2>
-<p>Cuando el orden estándar no se ajusta al objetivo del informe, se
-pueden combinar directamente los accesores Markdown. Por ejemplo, una
-ficha puede anteponer la clasificación, limitar las imágenes, incluir un
-mapa completo y cerrar con las referencias. Esta estrategia también
-permite omitir secciones sin datos pertinentes.</p>
-<p>Una composición personalizada debe respetar las diferencias entre
-fuentes: <code>source = "local"</code> en iNaturalist y GBIF requiere
-archivos preparados; las funciones de ChecklistBank y
-<code><a href="../reference/locations.html">locations()</a></code> no reciben ese argumento y siguen sus propias
-reglas de consulta. Además, cada bloque se renderiza en el orden en que
-se llama, por lo que las llamadas a funciones de mapa e imágenes deben
-estar en un chunk configurado para salida <code>asis</code>.</p>
-<p>Se pueden construir variantes más específicas sin consultar todos los
-módulos. Por ejemplo, una nota nomenclatural puede combinar nombre,
-publicación, sinónimos y referencias; un resultado cartográfico puede
-unir <code><a href="../reference/locations.html">locations_md()</a></code> con <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>; y
-una placa visual puede usar <code><a href="../reference/inat_images.html">inat_images_md()</a></code> sin añadir un
-mapa. Mantén explícitos los filtros y parámetros que alteren la
-selección de registros, la licencia o la escala geográfica para que la
-composición sea interpretable y reproducible.</p>
+<p>When the standard order does not fit a report’s purpose, Markdown
+accessors can be combined directly. For example, a species account can
+lead with classification, limit the images, include a full-extent map,
+and end with references. This approach also makes it possible to omit
+sections that are not relevant.</p>
+<p>Custom compositions should account for source-specific behavior:
+<code>source = "local"</code> in iNaturalist and GBIF requires prepared
+files; ChecklistBank functions and <code><a href="../reference/locations.html">locations()</a></code> do not
+accept that argument and follow their own query rules. Each section is
+rendered in call order, so map and image calls should be placed in a
+chunk configured for <code>asis</code> output.</p>
+<p>More focused outputs can be assembled without querying every module.
+For example, a nomenclatural note can combine a name, publication,
+synonyms, and references; a geographic account can pair
+<code><a href="../reference/locations.html">locations_md()</a></code> with <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>; and a
+photographic plate can use <code><a href="../reference/inat_images.html">inat_images_md()</a></code> without a map.
+Keep filters and parameters that affect record selection, licensing, or
+geographic scale explicit so the composition remains interpretable and
+reproducible.</p>
 </div>
 <div class="section level2">
-<h2 id="buenas-prácticas-para-renderizar">Buenas prácticas para renderizar<a class="anchor" aria-label="anchor" href="#buenas-pr%C3%A1cticas-para-renderizar"></a>
+<h2 id="rendering-practices">Rendering practices<a class="anchor" aria-label="anchor" href="#rendering-practices"></a>
 </h2>
 <ul>
-<li>Para renders repetidos, configura el origen local en imágenes y
-mapas después de validar y archivar los archivos requeridos.</li>
-<li>Evita ejecutar consultas en línea durante cada formato de salida de
-un mismo libro; genera o guarda los datos una vez y reutilízalos.</li>
-<li>Conserva los metadatos de procedencia, fechas y licencias junto con
-los archivos descargados.</li>
-<li>Usa <code>results='asis'</code> en chunks que imprimen Markdown
-generado por el paquete.</li>
-<li>Define referencias cruzadas a partir de los identificadores
-producidos por las funciones y confirma el identificador en el documento
-renderizado.</li>
+<li>For repeated renders, use local sources for images and maps after
+validating and archiving the required files.</li>
+<li>Avoid repeating online queries for each output format of the same
+book; retrieve or save the data once and reuse it.</li>
+<li>Keep provenance metadata, dates, and licenses with downloaded
+files.</li>
+<li>Use <code>results='asis'</code> in chunks that print Markdown
+generated by the package.</li>
+<li>Define cross-references from the identifiers produced by the
+functions and confirm them in the rendered document.</li>
 </ul>
-<p>Las políticas y disponibilidad de ChecklistBank, GBIF e iNaturalist
-pueden cambiar. Consulta la documentación de cada proveedor antes de
-planificar una recuperación masiva o redistribuir registros e
-imágenes.</p>
+<p>ChecklistBank, GBIF, and iNaturalist policies and availability may
+change. Consult each provider’s documentation before planning
+large-scale retrieval or redistributing records and images.</p>
 </div>
   </div>
 

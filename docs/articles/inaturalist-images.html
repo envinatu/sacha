@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>04. Fotografías de observaciones de iNaturalist • sacha</title>
+<title>04. iNaturalist observation photographs • sacha</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="48x48" href="../favicon-48x48.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="04. Fotografías de observaciones de iNaturalist">
+<script src="../pkgdown.js"></script><meta property="og:title" content="04. iNaturalist observation photographs">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -54,19 +54,19 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/clb.html">02. Datos taxonómicos y nomenclaturales de ChecklistBank</a>
+      <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Primeros pasos y flujos de datos</a>
+      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. Fotografías de observaciones de iNaturalist</a>
+      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. Mapas de GBIF y áreas documentadas</a>
+      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
     </li>
     <li>
-      <a href="../articles/species-reports.html">05. Informes por especie y personalización en Quarto</a>
+      <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
 </li>
@@ -91,8 +91,7 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>04. Fotografías de observaciones de
-iNaturalist</h1>
+      <h1 data-toc-skip>04. iNaturalist observation photographs</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/envinatu/sacha/blob/HEAD/vignettes/inaturalist-images.Rmd" class="external-link"><code>vignettes/inaturalist-images.Rmd</code></a></small>
@@ -103,76 +102,73 @@ iNaturalist</h1>
     
     
 <div class="section level2">
-<h2 id="qué-representan-los-resultados">Qué representan los resultados<a class="anchor" aria-label="anchor" href="#qu%C3%A9-representan-los-resultados"></a>
+<h2 id="what-the-results-represent">What the results represent<a class="anchor" aria-label="anchor" href="#what-the-results-represent"></a>
 </h2>
-<p><code><a href="../reference/inat_images.html">inat_images()</a></code> y <code><a href="../reference/inat_images.html">inat_images_md()</a></code> localizan
-observaciones de una especie y devuelven sus fotografías y metadatos
-asociados. Por defecto, buscan una observación de grado Research Grade
-con fotografías; las más recientes por fecha de observación aparecen
-primero. También se puede filtrar por <code>user_id</code> o
-<code>place_id</code>, o seleccionar observaciones con
-<code>observation_id</code>.</p>
-<p>La función interactiva <code><a href="../reference/inat_images.html">inat_images()</a></code> presenta los
-metadatos en consola y una composición en el visor de gráficos.
-<code><a href="../reference/inat_images.html">inat_images_md()</a></code> genera marcado para documentos Quarto o R
-Markdown. Ambas aceptan los mismos criterios de selección y opciones de
-guardado; la variante Markdown añade controles de maquetación para sus
-subfiguras.</p>
-<p>Los ejemplos que solicitan observaciones o escriben archivos están
-marcados para no ejecutarse durante la construcción de la viñeta. Así no
-se envían solicitudes ni se descargan medios durante
-<code>R CMD build</code> o <code>R CMD check</code>.</p>
+<p><code><a href="../reference/inat_images.html">inat_images()</a></code> and <code><a href="../reference/inat_images.html">inat_images_md()</a></code> find
+observations of a species and return their photographs and associated
+metadata. By default, they search for photographed Research Grade
+observations and sort them by observation date, most recent first.
+Results can also be filtered by <code>user_id</code> or
+<code>place_id</code>, or selected with <code>observation_id</code>.</p>
+<p>The interactive <code><a href="../reference/inat_images.html">inat_images()</a></code> function prints metadata
+to the console and displays an image composition in the graphics viewer.
+<code><a href="../reference/inat_images.html">inat_images_md()</a></code> generates markup for Quarto or R Markdown
+documents. Both accept the same selection criteria and save options; the
+Markdown variant also provides layout controls for subfigures.</p>
+<p>Examples that request observations or write files are marked not to
+run when the vignette is built. This prevents requests and media
+downloads during <code>R CMD build</code> or
+<code>R CMD check</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="selección-de-observaciones-e-imágenes">Selección de observaciones e imágenes<a class="anchor" aria-label="anchor" href="#selecci%C3%B3n-de-observaciones-e-im%C3%A1genes"></a>
+<h2 id="selecting-observations-and-images">Selecting observations and images<a class="anchor" aria-label="anchor" href="#selecting-observations-and-images"></a>
 </h2>
-<p>Los argumentos más comunes son:</p>
+<p>Common arguments include:</p>
 <ul>
 <li>
-<code>species</code>: nombre científico; también se puede
-especificar <code>observation_id</code>.</li>
+<code>species</code>: scientific name; <code>observation_id</code>
+can be used instead.</li>
 <li>
-<code>number_observations</code>: máximo de observaciones, con valor
-predeterminado 1.</li>
+<code>number_observations</code>: maximum number of observations;
+defaults to 1.</li>
 <li>
-<code>quality_grade</code>: <code>"research"</code> excluye las
-observaciones Casual; <code>"needs_id"</code> selecciona observaciones
-pendientes de identificación y <code>"casual"</code> permite
-solicitarlas explícitamente.</li>
+<code>quality_grade</code>: <code>"research"</code> excludes Casual
+observations; <code>"needs_id"</code> selects observations awaiting
+identification; <code>"casual"</code> explicitly allows Casual
+observations.</li>
 <li>
-<code>place_id</code> y <code>user_id</code>: filtros opcionales de
-lugar y observador.</li>
+<code>place_id</code> and <code>user_id</code>: optional place and
+observer filters.</li>
 <li>
 <code>image_size</code>: <code>"small"</code>,
-<code>"square"</code>, <code>"medium"</code>, <code>"large"</code> u
-<code>"original"</code>; el valor predeterminado es
-<code>"medium"</code>.</li>
+<code>"square"</code>, <code>"medium"</code>, <code>"large"</code>, or
+<code>"original"</code>; defaults to <code>"medium"</code>.</li>
 <li>
-<code>language</code> y <code>observer_name</code>: idioma de los
-pies de figura y reemplazo opcional del nombre mostrado del
-observador.</li>
+<code>language</code> and <code>observer_name</code>: caption
+language and an optional replacement for the displayed observer
+name.</li>
 <li>
-<code>catalogue_dataset</code>: conjunto de ChecklistBank empleado
-al completar la autoría taxonómica de las observaciones.</li>
+<code>catalogue_dataset</code>: ChecklistBank dataset used to
+complete the taxonomic authorship of observations.</li>
 <li>
-<code>images_directory</code>: directorio base para buscar o guardar
-imágenes, metadatos y composiciones.</li>
+<code>images_directory</code>: base directory for finding or saving
+images, metadata, and compositions.</li>
 <li>
-<code>source</code>: <code>"web"</code> consulta la API v2;
-<code>"local"</code> busca el archivo guardado.</li>
+<code>source</code>: <code>"web"</code> queries API v2;
+<code>"local"</code> reads saved files.</li>
 <li>
-<code>verify_local = TRUE</code>: intenta primero satisfacer la
-petición con el archivo local completo y consulta la API si este no
-basta.</li>
+<code>verify_local = TRUE</code>: first tries to satisfy the request
+from the complete local file and queries the API if that file is
+insufficient.</li>
 <li>
-<code>refresh = TRUE</code>: evita reutilizar el resultado de
-consulta en caché.</li>
+<code>refresh = TRUE</code>: avoids reusing a cached query
+result.</li>
 </ul>
-<p><code><a href="../reference/inat_images.html">inat_images_md()</a></code> también admite <code>ncol</code> para
-el número de columnas y <code>word_subfigure_width</code> y
-<code>latex_subfigure_width</code> para ajustar las subfiguras en esos
-formatos. La ayuda <code><a href="../reference/inat_images.html">?inat_images</a></code> documenta todos los
-argumentos y sus valores aceptados.</p>
+<p><code><a href="../reference/inat_images.html">inat_images_md()</a></code> also accepts <code>ncol</code> to set
+the number of columns and <code>word_subfigure_width</code> and
+<code>latex_subfigure_width</code> to adjust subfigure widths in those
+formats. See <code><a href="../reference/inat_images.html">?inat_images</a></code> for all arguments and accepted
+values.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
@@ -191,46 +187,43 @@ argumentos y sus valores aceptados.</p>
 <span>  word_subfigure_width <span class="op">=</span> <span class="st">"3in"</span>,</span>
 <span>  latex_subfigure_width <span class="op">=</span> <span class="st">"86%"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><code>place_id</code> admite un identificador numérico de iNaturalist
-y puede añadirse a la llamada cuando el muestreo se limita a un lugar.
-No se fija aquí un lugar concreto para que el ejemplo sea aplicable a
-distintos ámbitos de estudio.</p>
+<p><code>place_id</code> accepts a numeric iNaturalist place identifier
+and can be added when sampling is restricted to a place. No particular
+place is specified here so that the example remains applicable to
+different study areas.</p>
 </div>
 <div class="section level2">
-<h2 id="licencias-y-atribución">Licencias y atribución<a class="anchor" aria-label="anchor" href="#licencias-y-atribuci%C3%B3n"></a>
+<h2 id="licenses-and-attribution">Licenses and attribution<a class="anchor" aria-label="anchor" href="#licenses-and-attribution"></a>
 </h2>
-<p>La licencia de una fotografía y la licencia de una observación son
-campos distintos. La selección de imágenes se basa en la licencia de
-cada fotografía; la función no deduce las condiciones de uso de la foto
-a partir de la licencia de la observación. El conjunto predeterminado
-conserva fotos con licencias Creative Commons compatibles con
-atribución. El pie de figura identifica la licencia de la foto y enlaza
-la página de la observación, no un URL directo de la imagen.</p>
-<p>La presencia de una licencia no elimina las obligaciones que esta
-impone. Comprueba si la licencia permite el uso previsto y conserva la
-atribución, las restricciones comerciales, las condiciones de compartir
-bajo la misma licencia y las limitaciones de obras derivadas cuando
-correspondan. La atribución generada no sustituye la revisión de los
-términos de cada imagen.</p>
+<p>The license for a photograph and the license for an observation are
+separate fields. Image selection uses each photograph’s license; the
+function does not infer photo-use terms from the observation’s license.
+By default, it retains photographs with Creative Commons licenses that
+permit attribution. Captions identify the photo license and link to the
+observation page, not directly to the image URL.</p>
+<p>Having a license does not remove its conditions. Check whether it
+permits the intended use, and retain attribution and comply with any
+restrictions on commercial use, share-alike requirements, and derivative
+works. Generated attribution does not replace review of each image’s
+terms.</p>
 </div>
 <div class="section level2">
-<h2 id="guardado-local-y-composición">Guardado local y composición<a class="anchor" aria-label="anchor" href="#guardado-local-y-composici%C3%B3n"></a>
+<h2 id="local-storage-and-image-composition">Local storage and image composition<a class="anchor" aria-label="anchor" href="#local-storage-and-image-composition"></a>
 </h2>
-<p><code><a href="../reference/inat_save_images.html">inat_save_images()</a></code> descarga la imagen primaria y, por
-defecto, las imágenes auxiliares de las observaciones seleccionadas.
-Guarda metadatos JSON junto a los archivos bajo
-<code>sacha_exports/Family_Genus_species/inat</code>. Este archivo local
-puede reutilizarse con <code>source = "local"</code>.
-<code>include_auxiliary = FALSE</code> limita el guardado a la imagen
-primaria; <code>overwrite</code> decide si se reemplazan archivos ya
-existentes.</p>
-<p>El argumento <code>save_images = TRUE</code> de
-<code><a href="../reference/inat_images.html">inat_images()</a></code> e <code><a href="../reference/inat_images.html">inat_images_md()</a></code> realiza el
-guardado durante la misma consulta. Las imágenes y los metadatos quedan
-disponibles para llamadas locales posteriores.
-<code>export_comp = TRUE</code> guarda únicamente el PNG de la
-composición; no exporta de nuevo las imágenes fuente ni sus metadatos.
-La composición requiere el paquete opcional <code>magick</code>.</p>
+<p><code><a href="../reference/inat_save_images.html">inat_save_images()</a></code> downloads the primary image and, by
+default, auxiliary images for the selected observations. It saves JSON
+metadata alongside the files under
+<code>sacha_exports/Family_Genus_species/inat</code>. These local files
+can be reused with <code>source = "local"</code>. Set
+<code>include_auxiliary = FALSE</code> to save only the primary image;
+<code>overwrite</code> controls whether existing files are replaced.</p>
+<p>The <code>save_images = TRUE</code> argument in
+<code><a href="../reference/inat_images.html">inat_images()</a></code> and <code><a href="../reference/inat_images.html">inat_images_md()</a></code> saves
+images during the same query. Images and metadata are then available to
+later local calls. <code>export_comp = TRUE</code> saves only the
+composition PNG; it does not export the source images or their metadata
+again. Image composition requires the optional <code>magick</code>
+package.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_save_images.html">inat_save_images</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
@@ -254,44 +247,41 @@ La composición requiere el paquete opcional <code>magick</code>.</p>
 <span>  export_comp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ncol <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Una consulta local requiere un archivo local que cubra los filtros
-solicitados. <code>verify_local = TRUE</code> puede recurrir a la web si
-el archivo no satisface la petición. Si se necesita un render
-completamente predecible, verifica y archiva previamente las
-observaciones, las imágenes y sus metadatos.</p>
+<p>A local query requires a local file that covers the requested
+filters. <code>verify_local = TRUE</code> can fall back to the web if
+the file does not satisfy the request. For fully predictable rendering,
+verify and archive the observations, images, and metadata in
+advance.</p>
 </div>
 <div class="section level2">
-<h2 id="uso-en-documentos">Uso en documentos<a class="anchor" aria-label="anchor" href="#uso-en-documentos"></a>
+<h2 id="use-in-documents">Use in documents<a class="anchor" aria-label="anchor" href="#use-in-documents"></a>
 </h2>
-<p>En un chunk de Quarto o R Markdown, <code><a href="../reference/inat_images.html">inat_images_md()</a></code>
-genera una figura con subfiguras y pies que contienen nombre científico,
-localidad, fecha, observador, licencia fotográfica y URL de observación.
-Configura el chunk con <code>results='asis'</code> para que se
-interprete el marcado emitido.</p>
-<p>El identificador del panel sigue la forma
-<code>fig-taxon-&lt;taxon_id&gt;</code> y el de cada subfigura
-<code>fig-sub-&lt;observation_id&gt;</code>. El ID taxonómico se
-resuelve a partir de las observaciones; una vez renderizado el
-documento, usa el ID correspondiente en referencias como
-<code>@fig-taxon-&lt;taxon_id&gt;</code> o
+<p>In a Quarto or R Markdown chunk, <code><a href="../reference/inat_images.html">inat_images_md()</a></code>
+creates a figure with subfigures and captions containing the scientific
+name, locality, date, observer, photo license, and observation URL. Set
+<code>results='asis'</code> so the rendered document interprets the
+emitted markup.</p>
+<p>The panel identifier has the form
+<code>fig-taxon-&lt;taxon_id&gt;</code>, and each subfigure uses
+<code>fig-sub-&lt;observation_id&gt;</code>. The taxon ID is resolved
+from the observations. After rendering, use the corresponding ID in
+references such as <code>@fig-taxon-&lt;taxon_id&gt;</code> or
 <code>@fig-sub-&lt;observation_id&gt;</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="consultas-y-transferencia-responsables">Consultas y transferencia responsables<a class="anchor" aria-label="anchor" href="#consultas-y-transferencia-responsables"></a>
+<h2 id="responsible-querying-and-data-transfer">Responsible querying and data transfer<a class="anchor" aria-label="anchor" href="#responsible-querying-and-data-transfer"></a>
 </h2>
-<p>iNaturalist recomienda espaciar las solicitudes y advierte que las
-descargas de más de 5 GB de medios por hora o 24 GB por día pueden
-ocasionar un bloqueo permanente. El paquete introduce pausas y límites
-de seguridad por sesión; el seguimiento local no incluye transferencias
-realizadas desde otras sesiones, procesos o equipos de la misma red.
-Para una colección grande, solicita solo las imágenes necesarias, evita
-renders paralelos que repitan consultas y usa archivos locales para
-iteraciones posteriores.</p>
-<p>Referencias: <a href="https://api.inaturalist.org/v2/docs/" class="external-link">API v2 de
-iNaturalist</a>, <a href="https://www.inaturalist.org/pages/api+recommended+practices" class="external-link">prácticas
-recomendadas de la API</a>, <a href="https://www.inaturalist.org/pages/search+urls" class="external-link">licencias de
-búsqueda</a> y <a href="https://help.inaturalist.org/en/support/solutions/articles/151000169918" class="external-link">guía
-de uso y atribución de fotos</a>.</p>
+<p>iNaturalist recommends spacing requests and warns that downloading
+more than 5 GB of media per hour or 24 GB per day may result in a
+permanent block. The package applies pauses and per-session safety
+limits; local tracking does not include transfers from other sessions,
+processes, or computers on the same network. For large collections,
+request only the images needed, avoid parallel renders that repeat
+queries, and use local files for later iterations.</p>
+<p>References: <a href="https://api.inaturalist.org/v2/docs/" class="external-link">iNaturalist API v2</a>, <a href="https://www.inaturalist.org/pages/api+recommended+practices" class="external-link">API
+recommended practices</a>, <a href="https://www.inaturalist.org/pages/search+urls" class="external-link">search
+licenses</a>, and the <a href="https://help.inaturalist.org/en/support/solutions/articles/151000169918" class="external-link">photo
+use and attribution guide</a>.</p>
 </div>
   </div>
 
