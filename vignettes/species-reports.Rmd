@@ -1,0 +1,120 @@
+---
+title: "05. Species reports and Quarto customization"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{05. Species reports and Quarto customization}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(sacha)
+```
+
+# Combined reports
+
+Report functions combine existing accessors. They preserve each section's format and rules, so users can start with a standard report and build a custom composition when they need control over its content or order.
+
+The code chunks in this vignette are not executed when it is built: some require external services, while others require locally saved files. No credentials, user-specific file paths, or downloads are included.
+
+# Choosing a report
+
+| Function | Sections | Source considerations |
+|:-----------------------|:-----------------------|:-----------------------|
+| `sacha_clb_report()` | Accepted name, first publication, indexations, common names, classification, synonyms and combinations, documented areas, and references. | ChecklistBank sections retain the configured web behavior. |
+| `sacha_spatial_report()` | Documented areas and a cropped GBIF map. | `language` applies to the area text; additional arguments are passed to `gbif_map_crop_md()`. |
+| `sacha_report()` | Name, first publication, images, indexations, common names, classification, synonymy, areas, GBIF map, and references. | `source = "local"` is the default for images and maps; `source = "web"` requests both services online. ChecklistBank sections continue to use their web source. |
+
+For `sacha_report()`, `source = "local"` requires iNaturalist and GBIF files that match the species and filters. If the cropped map requires a boundary, provide one or configure it in advance. ChecklistBank sections may still query the web even when local files are used, so the report is not fully offline.
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+sacha_clb_report("Bidens andicola", language = "en")
+```
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+sacha_spatial_report(
+  "Bidens andicola",
+  crop_box = c(-180, -90, 180, 90, "Global extent"),
+  source = "local",
+  local_export = "species",
+  distribution = "global",
+  mode = "static"
+)
+```
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+sacha_report(
+  "Bidens andicola",
+  source = "local",
+  crop_box = c(-180, -90, 180, 90, "Global extent"),
+  local_export = "species",
+  distribution = "global",
+  mode = "static"
+)
+```
+
+The `_md` reports emit document markup. In Quarto or R Markdown, `results='asis'` lets the renderer process that markup and its figures. Figure options and cross-references are covered in the [maps](spatial-maps.html) and [images](inaturalist-images.html) vignettes.
+
+# Shared values and explicit arguments
+
+`sacha_arg_configure()` sets shared arguments for subsequent calls. An argument supplied directly to a report takes precedence over its shared value. Each section's arguments retain the meaning and accepted values of the underlying function; `?sacha_report` lists the forwarded names, and the corresponding accessors document how to use them.
+
+```{r, eval=FALSE}
+sacha_arg_configure(
+  species = "Bidens andicola",
+  number_observations = 1,
+  image_size = "medium",
+  source = "local"
+)
+
+sacha_report(crop_box = c(-180, -90, 180, 90, "Global extent"))
+sacha_report(
+  species = "Bidens andicola",
+  source = "web",
+  crop_box = c(-180, -90, 180, 90, "Global extent")
+)
+
+sacha_clear_cache()
+```
+
+The first report inherits the configured values. In the second, explicit arguments replace shared values with the same names. `sacha_clear_cache()` resets configuration and removes shared values, but does not delete saved files or reset iNaturalist download-volume and delay controls.
+
+# Advanced section composition
+
+When the standard order does not fit a report's purpose, Markdown accessors can be combined directly. For example, a species account can lead with classification, limit the images, include a full-extent map, and end with references. This approach also makes it possible to omit sections that are not relevant.
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+species <- "Bidens andicola"
+
+sc_full_name_md(species)
+classification_md(species, language = "en")
+common_names_md(species, language = "en")
+inat_images_md(
+  species,
+  source = "local",
+  number_observations = 1,
+  ncol = 1
+)
+locations_md(species, language = "en")
+gbif_map_md(
+  species,
+  source = "local",
+  mode = "static",
+  limit = 500
+)
+references_sp_md(species, language = "en")
+```
+
+Custom compositions should account for source-specific behavior: `source = "local"` in iNaturalist and GBIF requires prepared files; ChecklistBank functions and `locations()` do not accept that argument and follow their own query rules. Each section is rendered in call order, so map and image calls should be placed in a chunk configured for `asis` output.
+
+More focused outputs can be assembled without querying every module. For example, a nomenclatural note can combine a name, publication, synonyms, and references; a geographic account can pair `locations_md()` with `gbif_map_crop_md()`; and a photographic plate can use `inat_images_md()` without a map. Keep filters and parameters that affect record selection, licensing, or geographic scale explicit so the composition remains interpretable and reproducible.
+
+# Rendering practices
+
+- For repeated renders, use local sources for images and maps after validating and archiving the required files.
+- Avoid repeating online queries for each output format of the same book; retrieve or save the data once and reuse it.
+- Keep provenance metadata, dates, and licenses with downloaded files.
+- Use `results='asis'` in chunks that print Markdown generated by the package.
+- Define cross-references from the identifiers produced by the functions and confirm them in the rendered document.
+
+ChecklistBank, GBIF, and iNaturalist policies and availability may change. Consult each provider's documentation before planning large-scale retrieval or redistributing records and images.

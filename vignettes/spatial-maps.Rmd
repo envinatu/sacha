@@ -1,0 +1,116 @@
+---
+title: "03. GBIF maps and documented areas"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{03. GBIF maps and documented areas}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(sacha)
+```
+
+# Two meanings of distribution
+
+This module brings together two kinds of geographic information that should be kept distinct. `locations()` returns geographic areas documented in the Catalogue of Life through ChecklistBank. GBIF functions represent georeferenced occurrence records. A documented area is not equivalent to a set of observations and does not, by itself, demonstrate current presence at every point within that area.
+
+GBIF queries require a network connection when using `source = "gbif"`. The `"local"` source avoids that query but requires compatible exports created in advance. Code chunks that interact with data or services are not executed when the vignette is built.
+
+# Catalogue of Life geographic areas
+
+`locations("Bidens andicola")` displays the areas documented by the source. `locations_md()` adds a heading and report-ready formatting. These functions do not have a `source` argument: they query the configured service and do not read records saved by GBIF.
+
+```{r, eval=FALSE}
+locations("Bidens andicola", language = "en")
+locations_md("Bidens andicola", language = "en")
+```
+
+# Full-extent maps
+
+`gbif_map()` returns a map for interactive inspection or a static `ggplot2` object. `mode = "interactive"` creates a Leaflet map, while `mode = "static"` creates a static map. The `gbif_map_md()` variant produces a figure for a document; if `mode` is `NULL`, it selects the appropriate type for the output format.
+
+GBIF must resolve the name as an exact species-level match and retrieves georeferenced observations. `limit` controls the number of observations used on the map; it is an integer from 1 to 100000 and does not reduce the complete set saved when `save_occurrences = TRUE`. `colour` changes point color; `dpi` or its alias `ppp` controls PNG resolution. `overwrite` determines whether existing files are replaced. `export_image = TRUE` writes a static PNG, and `save_occurrences = TRUE` saves data and metadata. Exports are stored under `sacha_exports/Family_Genus_species` within `directory`. In `_md` variants, `fig_width` and `fig_height` adjust the document figure dimensions.
+
+```{r, eval=FALSE}
+gbif_map(
+  "Bidens andicola",
+  source = "gbif",
+  limit = 500,
+  mode = "static",
+  export_image = TRUE
+)
+
+gbif_map_md(
+  "Bidens andicola",
+  source = "gbif",
+  mode = "static",
+  limit = 500
+)
+```
+
+The full-extent Markdown figure for this species uses the identifier `fig-gbif-map-bidens_andicola`; write `@fig-gbif-map-bidens_andicola` for a Quarto cross-reference. Add `results='asis'` to the chunk so the document renders the generated markup.
+
+# Cropped maps
+
+`gbif_map_crop()` and `gbif_map_crop_md()` define a region with `kml`, `crop_area`, or `crop_box`. `kml` and `crop_area` are mutually exclusive. `crop_box` can be used alone or with either one; its four numeric values are in WGS 84 decimal degrees and follow the order `xmin`, `ymin`, `xmax`, `ymax`. An optional label can be supplied as a fifth value. `crop_area` resolves an administrative area name or code using the Natural Earth gazetteer; `kml` takes a path to a KML geometry used as a boundary and visual reference.
+
+`distribution = "local"` maps only occurrences inside the crop; `distribution = "global"` shows the full distribution within the map frame, with the region as a reference. When a box is combined with an area or KML, the region is limited to their intersection. For a local map, `local_export = "species"` starts from the full-species export and applies the crop; `local_export = "crop"` reads an export that already contains the crop and its boundary.
+
+The following example uses a box covering the global extent to show the argument structure without selecting a study area. In an analysis, replace its coordinates with the bounds of interest.
+
+```{r, eval=FALSE}
+gbif_map_crop_md(
+  "Bidens andicola",
+  crop_box = c(-180, -90, 180, 90, "Global extent"),
+  source = "gbif",
+  distribution = "global",
+  mode = "static"
+)
+```
+
+For a KML boundary, provide a valid file path when running the analysis; this vignette does not include or depend on a user-provided KML. A local query requires the relevant occurrences to have been saved in advance.
+
+# Saving and reusing occurrences
+
+`gbif_save_occurrences()` retrieves up to 100,000 georeferenced occurrences for the resolved taxon by default and saves the records with provenance metadata. Set `limit = NULL` to retrieve all available records. If `kml` is provided, it restricts the export to that boundary and saves the geometry as well.
+
+In map functions, `save_occurrences = TRUE` also creates a local export. When saving from `gbif_map_crop()`, the crop and its geometry are retained. The `gbif_map_crop_md()` variant accepts the same mapping arguments, as well as document figure-dimension options.
+
+```{r, eval=FALSE}
+gbif_save_occurrences("Bidens andicola")
+
+gbif_map(
+  "Bidens andicola",
+  source = "local",
+  mode = "static",
+  limit = 500
+)
+
+gbif_map_crop(
+  "Bidens andicola",
+  crop_box = c(-180, -90, 180, 90, "Global extent"),
+  source = "local",
+  local_export = "species",
+  distribution = "global"
+)
+```
+
+Calls with `source = "local"` do not download missing records. If a requested crop is not present in the saved files, use the full-species export to apply the crop or create an appropriate cropped export.
+
+# Figures in Quarto and R Markdown
+
+For chunks that call `_md` functions, use `results='asis'` so figure markup is passed to the renderer. Cropped-map figure identifiers include the species and normalized area label. For example, with the label `Global extent`, the reference follows the pattern `@fig-gbif-map-crop-bidens_andicola-global_extent`. Check the generated identifier in the rendered document if you change the label.
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+gbif_map_crop_md(
+  "Bidens andicola",
+  crop_box = c(-180, -90, 180, 90, "Global extent"),
+  source = "local",
+  local_export = "species",
+  distribution = "global",
+  mode = "static"
+)
+```
+
+For guidance on querying and attributing records, see the [GBIF API documentation](https://techdocs.gbif.org/en/openapi/).

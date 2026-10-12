@@ -1,0 +1,123 @@
+---
+title: "02. ChecklistBank taxonomic and nomenclatural data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{02. ChecklistBank taxonomic and nomenclatural data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(sacha)
+```
+
+# Scope of this module
+
+The accessors in `sacha_clb.R` retrieve information associated with a scientific name from ChecklistBank and the configured dataset. Their results depend on that source's coverage and taxonomic treatment; they should not be interpreted as an independent taxonomic review. These accessors query the web: downloading a ColDP archive with `save_clb()` does not automatically change their data source.
+
+Examples use *Bidens andicola*. Calls that may query ChecklistBank or other services are shown without being executed when the vignette is built.
+
+# Data accessors
+
+| Function | Information returned | Markdown variant |
+|:-----------------------|:-----------------------|:-----------------------|
+| `sc_full_name()` | Accepted scientific name and authorship, when provided by the source. | `sc_full_name_md()` |
+| `first_publicacion()` | Citation for the first publication recorded for the taxon. Bibliographic data are not translated. | `first_publicacion_md()` |
+| `indexations()` | Links to records available on external taxonomic platforms. | `indexations_md()` |
+| `common_names()` | Vernacular names grouped by the language reported by the source. | `common_names_md()` |
+| `classification()` | Complete taxonomic lineage or the name of a requested rank. | `classification_md()` |
+| `syn_and_comb()` | Recorded homotypic and heterotypic synonyms and misapplied names. | `syn_and_comb_md()` |
+| `references_sp()` | Bibliographic references associated with the record; can export them as BibTeX. | `references_sp_md()` |
+
+Regular output is intended for inspection in R. The `_md` variant creates structured text for documents, such as headings, lists, and links. See each function's help for its options, for example `?classification` or `?references_sp`.
+
+# Names, publication, and classification
+
+`sc_full_name()` completes the requested name with the available authorship. `first_publicacion()` returns the publication citation associated with the name by the source. `classification()` presents the lineage in the reported order, from higher ranks to the queried taxon. The `rank` argument requests a rank present in the record; rank names are specified in English and are not case-sensitive.
+
+```{r, eval=FALSE}
+species <- "Bidens andicola"
+
+sc_full_name(species)
+first_publicacion(species, language = "en")
+classification(species, language = "en")
+classification(species, rank = "family", language = "en")
+
+sc_full_name_md(species)
+first_publicacion_md(species, language = "en")
+classification_md(species, language = "en")
+```
+
+Do not infer an unreported rank from another rank. In Markdown output, taxonomic names are linked when the source provides an identifier supported by the configured link template.
+
+# Vernacular names and nomenclature
+
+`common_names()` returns the vernacular names that the dataset associates with the taxon and preserves the language groups reported by the source. The language setting affects text labels; it does not translate or validate the recorded names.
+
+`syn_and_comb()` organizes nomenclatural information into three groups:
+
+- **Homotypic**: names based on the same nomenclatural type as the accepted name, including later combinations.
+- **Heterotypic**: names based on different types that the source treats as taxonomic synonyms.
+- **Misapplied**: names used for the taxon even though their type belongs to a different taxon; the source may report the author of that usage.
+
+These categories reflect the provider's data model and records. The absence of a group does not by itself establish that names of that kind do not exist.
+
+```{r, eval=FALSE}
+species <- "Bidens andicola"
+
+common_names(species, language = "en")
+common_names_md(species, language = "en")
+syn_and_comb(species, language = "en")
+syn_and_comb_md(species, language = "en")
+```
+
+# Taxonomic indexes and links
+
+`indexations()` returns the available URLs. Use `identifier` to restrict the output to one record, for example `"gbif"`, `"col"`, `"ipni"`, `"wfo"`, `"tpl"`, `"itis"`, `"ncbi"`, `"irmng"`, `"worms"`, or `"eol"`. See `?indexations` for accepted abbreviations and aliases.
+
+The accessors `ipni_url()`, `gbif_url()`, `inat_url()`, `col_url()`, `wfo_url()`, `tpl_url()`, `itis_url()`, `ncbi_url()`, `irmng_url()`, `worms_url()`, and `eol_url()` are shortcuts for requesting an individual platform. They return a link when the required identifier is available in the record.
+
+```{r, eval=FALSE}
+species <- "Bidens andicola"
+
+indexations(species)
+indexations(species, identifier = "gbif")
+gbif_url(species)
+col_url(species)
+indexations_md(species, identifier = "inat", language = "en")
+```
+
+# References and BibTeX files
+
+`references_sp()` retrieves the references associated with the record, removes duplicates, normalizes whitespace, and presents them in alphabetical order. When the source provides structured bibliographic metadata, `save_bib = TRUE` converts it into typed BibTeX entries. Otherwise, the available citation is retained in a general bibliographic entry. No file is created when the record contains no references.
+
+The file is saved under `sacha_exports/Family_Genus_species`, within the base directory specified by `bib_dir`. An export can replace a file with the same name; review the output before adding the BibTeX file to a project.
+
+```{r, eval=FALSE}
+species <- "Bidens andicola"
+
+references_sp(species, language = "en")
+references_sp_md(species, language = "en")
+references_sp(species, save_bib = TRUE, bib_dir = ".")
+```
+
+# Integrated taxonomic report
+
+`sacha_clb_report()` concatenates the Markdown variants in a stable order: accepted name, first publication, indexations, common names, classification, synonyms and combinations, documented areas, and references. The `language`, `rank`, `save_bib`, and `bib_dir` arguments customize the relevant sections. In a Quarto or R Markdown document, configure the chunk to interpret the output as Markdown text.
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+sacha_clb_report("Bidens andicola", language = "en")
+```
+
+This report retains the module's dependencies: ChecklistBank and any auxiliary services used by the source to complete identifiers must be available. It does not read data offline from a ColDP archive.
+
+# Downloading a complete ColDP dataset
+
+`save_clb()` downloads the complete ColDP archive for the configured dataset or another dataset identified by its key. It saves the ZIP and a metadata JSON file under `sacha_exports/checklistbank_<dataset>`. This operation does not filter the archive to *Bidens andicola*, may transfer a large volume of data, and is separate from the accessors in this vignette. Do not run it as part of an automated documentation build.
+
+```{r, eval=FALSE}
+save_clb()
+save_clb(dataset = "3LXR", overwrite = TRUE)
+```
+
+ChecklistBank documents its services at <https://api.checklistbank.org/>. ColDP and its tables are described at <https://catalogueoflife.github.io/coldp/>. Check the dataset's terms before redistributing a download.

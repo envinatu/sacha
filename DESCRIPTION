@@ -1,0 +1,45 @@
+Package: sacha
+Title:  Biodiversity Data and Image Access, Mapping, and Reporting
+Version: 0.1.0
+Authors@R: person("Marcelo F.", "Amores-Palma", role = c("aut", "cre", "cph"),
+    email = "contacto.envinatu@gmail.com",
+    comment = c(ORCID = "0000-0002-0337-0467"))
+Description: Supports biodiversity research by integrating taxonomic information
+    from ChecklistBank and the Catalogue of Life, occurrence records from GBIF,
+    and observation photographs from iNaturalist. Provides functions to retrieve
+    and format comprehensive, multimodal species profiles encompassing
+    nomenclatural, taxonomic, spatial, visual, and bibliographic data. Generates
+    maps, image compositions, and Markdown reports for inclusion in scientific
+    documents.
+License: GPL (>= 3)
+Language: en-US
+URL: https://github.com/envinatu/sacha
+BugReports: https://github.com/envinatu/sacha/issues
+Imports:
+    ggplot2,
+    httr2,
+    jsonlite,
+    knitr,
+    leaflet,
+    leaflet.extras,
+    rgbif,
+    rnaturalearth,
+    sf,
+    yaml,
+    tools,
+    rlang,
+    ggspatial,
+    htmltools
+Suggests:
+    htmlwidgets,
+    magick,
+    xfun,
+    quarto,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Encoding: UTF-8
+LazyData: true
+Config/roxygen2/version: 8.1.0
+VignetteBuilder: knitr

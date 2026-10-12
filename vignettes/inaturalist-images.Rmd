@@ -1,0 +1,120 @@
+---
+title: "04. iNaturalist observation photographs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{04. iNaturalist observation photographs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(sacha)
+```
+
+# What the results represent
+
+`inat_images()` and `inat_images_md()` find observations of a species and return their photographs and associated metadata. By default, they search for photographed Research Grade observations and sort them by observation date, most recent first. Results can also be filtered by `user_id` or `place_id`, or selected with `observation_id`.
+
+The interactive `inat_images()` function prints metadata to the console and displays an image composition in the graphics viewer. `inat_images_md()` generates markup for Quarto or R Markdown documents. Both accept the same selection criteria and save options; the Markdown variant also provides layout controls for subfigures.
+
+Examples that request observations or write files are marked not to run when the vignette is built. This prevents requests and media downloads during `R CMD build` or `R CMD check`.
+
+# Selecting observations and images
+
+Common arguments include:
+
+- `species`: scientific name; `observation_id` can be used instead.
+- `number_observations`: maximum number of observations; defaults to 1.
+- `quality_grade`: `"research"` excludes Casual observations; `"needs_id"` selects observations awaiting identification; `"casual"` explicitly allows Casual observations.
+- `place_id` and `user_id`: optional place and observer filters.
+- `image_size`: `"small"`, `"square"`, `"medium"`, `"large"`, or `"original"`; defaults to `"medium"`.
+- `language` and `observer_name`: caption language and an optional replacement for the displayed observer name.
+- `catalogue_dataset`: ChecklistBank dataset used to complete the taxonomic authorship of observations.
+- `images_directory`: base directory for finding or saving images, metadata, and compositions.
+- `source`: `"web"` queries API v2; `"local"` reads saved files.
+- `verify_local = TRUE`: first tries to satisfy the request from the complete local file and queries the API if that file is insufficient.
+- `refresh = TRUE`: avoids reusing a cached query result.
+
+`inat_images_md()` also accepts `ncol` to set the number of columns and `word_subfigure_width` and `latex_subfigure_width` to adjust subfigure widths in those formats. See `?inat_images` for all arguments and accepted values.
+
+```{r, eval=FALSE}
+inat_images(
+  species = "Bidens andicola",
+  number_observations = 2,
+  source = "web",
+  quality_grade = "research",
+  image_size = "medium",
+  language = "en"
+)
+
+inat_images_md(
+  species = "Bidens andicola",
+  number_observations = 2,
+  source = "web",
+  ncol = 2,
+  word_subfigure_width = "3in",
+  latex_subfigure_width = "86%"
+)
+```
+
+`place_id` accepts a numeric iNaturalist place identifier and can be added when sampling is restricted to a place. No particular place is specified here so that the example remains applicable to different study areas.
+
+# Licenses and attribution
+
+The license for a photograph and the license for an observation are separate fields. Image selection uses each photograph's license; the function does not infer photo-use terms from the observation's license. By default, it retains photographs with Creative Commons licenses that permit attribution. Captions identify the photo license and link to the observation page, not directly to the image URL.
+
+Having a license does not remove its conditions. Check whether it permits the intended use, and retain attribution and comply with any restrictions on commercial use, share-alike requirements, and derivative works. Generated attribution does not replace review of each image's terms.
+
+# Local storage and image composition
+
+`inat_save_images()` downloads the primary image and, by default, auxiliary images for the selected observations. It saves JSON metadata alongside the files under `sacha_exports/Family_Genus_species/inat`. These local files can be reused with `source = "local"`. Set `include_auxiliary = FALSE` to save only the primary image; `overwrite` controls whether existing files are replaced.
+
+The `save_images = TRUE` argument in `inat_images()` and `inat_images_md()` saves images during the same query. Images and metadata are then available to later local calls. `export_comp = TRUE` saves only the composition PNG; it does not export the source images or their metadata again. Image composition requires the optional `magick` package.
+
+```{r, eval=FALSE}
+inat_save_images(
+  species = "Bidens andicola",
+  number_observations = 2,
+  image_size = "medium",
+  include_auxiliary = TRUE
+)
+
+inat_images(
+  species = "Bidens andicola",
+  source = "local",
+  number_observations = 2,
+  export_comp = TRUE
+)
+
+inat_images_md(
+  species = "Bidens andicola",
+  source = "web",
+  number_observations = 2,
+  save_images = TRUE,
+  export_comp = TRUE,
+  ncol = 2
+)
+```
+
+A local query requires a local file that covers the requested filters. `verify_local = TRUE` can fall back to the web if the file does not satisfy the request. For fully predictable rendering, verify and archive the observations, images, and metadata in advance.
+
+# Use in documents
+
+In a Quarto or R Markdown chunk, `inat_images_md()` creates a figure with subfigures and captions containing the scientific name, locality, date, observer, photo license, and observation URL. Set `results='asis'` so the rendered document interprets the emitted markup.
+
+```{r, eval=FALSE, results='asis', echo=FALSE}
+inat_images_md(
+  "Bidens andicola",
+  source = "local",
+  number_observations = 2,
+  ncol = 2
+)
+```
+
+The panel identifier has the form `fig-taxon-<taxon_id>`, and each subfigure uses `fig-sub-<observation_id>`. The taxon ID is resolved from the observations. After rendering, use the corresponding ID in references such as `@fig-taxon-<taxon_id>` or `@fig-sub-<observation_id>`.
+
+# Responsible querying and data transfer
+
+iNaturalist recommends spacing requests and warns that downloading more than 5 GB of media per hour or 24 GB per day may result in a permanent block. The package applies pauses and per-session safety limits; local tracking does not include transfers from other sessions, processes, or computers on the same network. For large collections, request only the images needed, avoid parallel renders that repeat queries, and use local files for later iterations.
+
+References: [iNaturalist API v2](https://api.inaturalist.org/v2/docs/), [API recommended practices](https://www.inaturalist.org/pages/api+recommended+practices), [search licenses](https://www.inaturalist.org/pages/search+urls), and the [photo use and attribution guide](https://help.inaturalist.org/en/support/solutions/articles/151000169918).
