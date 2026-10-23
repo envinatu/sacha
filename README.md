@@ -1,7 +1,7 @@
 <!-- badges: start -->
 
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental) [![CRAN status](https://www.r-pkg.org/badges/version/sacha)](https://CRAN.R-project.org/package=sacha)  [![](http://cranlogs.r-pkg.org/badges/grand-total/sacha?color=green)](https://cran.r-project.org/package=sacha) [![Codecov test coverage](https://codecov.io/gh/envinatu/sacha/graph/badge.svg)](https://app.codecov.io/gh/envinatu/sacha) [![R-hub](https://github.com/envinatu/sacha/actions/workflows/rhub.yaml/badge.svg)](https://github.com/envinatu/sacha/actions/workflows/rhub.yaml) 
-[![R-CMD-check](https://github.com/envinatu/sacha/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/envinatu/sacha/actions/workflows/R-CMD-check.yaml)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental) [![CRAN status](https://www.r-pkg.org/badges/version/sacha)](https://CRAN.R-project.org/package=sacha) [![](http://cranlogs.r-pkg.org/badges/grand-total/sacha?color=green)](https://cran.r-project.org/package=sacha) [![Codecov test coverage](https://codecov.io/gh/envinatu/sacha/graph/badge.svg)](https://app.codecov.io/gh/envinatu/sacha) [![R-hub](https://github.com/envinatu/sacha/actions/workflows/rhub.yaml/badge.svg)](https://github.com/envinatu/sacha/actions/workflows/rhub.yaml) [![R-CMD-check](https://github.com/envinatu/sacha/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/envinatu/sacha/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
 # sacha
@@ -92,8 +92,8 @@ For a combined species report, `sacha_report()` joins taxonomic sections, iNatur
 The source option is specific to each module:
 
 | Module | Web source | Local source |
-|:-----------------------|:-----------------------|:-----------------------|
-| ChecklistBank and Catalogue of Life | Accessors query the configured service. | Accessors do not automatically read a downloaded ColDP archive. |
+|:---|:---|:---|
+| ChecklistBank and Catalogue of Life | Accessors query the configured service. | Local source support for downloading and reading ColDP archives is currently under development. |
 | GBIF | `source = "gbif"` queries GBIF for georeferenced occurrence records. | `source = "local"` reads occurrence exports previously saved by the package. |
 | iNaturalist | `source = "web"` queries iNaturalist observations and photographs. | `source = "local"` uses images and metadata previously saved by the package. |
 

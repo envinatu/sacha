@@ -141,7 +141,6 @@
       attribution_control = TRUE,
       layers_collapsed = TRUE,
       popup_font_family = "sans-serif",
-      initial_height_px = 600,
       tile_no_wrap = FALSE,
       world_copy_jump = TRUE,
       minimum_zoom = 0,
@@ -150,18 +149,6 @@
     ),
     complete = list(),
     crop = list(),
-    markdown = list(
-      complete = list(
-        square = c(width = 7, height = 7),
-        horizontal = c(width = 8, height = 6),
-        vertical = c(width = 6, height = 8)
-      ),
-      crop = list(
-        square = c(width = 7, height = 7),
-        horizontal = c(width = 8, height = 6),
-        vertical = c(width = 6, height = 8)
-      )
-    ),
     adornments = list(common = list(), complete = list(), crop = list())
   )
 )
@@ -200,7 +187,11 @@
   if (!variant %in% c("complete", "crop")) {
     stop("`variant` must be 'complete' or 'crop'.", call. = FALSE)
   }
-  size <- .sacha_spatial_map_style_markdown_size(mode, frame)
+  size <- if (identical(mode, "static")) {
+    .sacha_spatial_map_style_markdown_size(mode, frame)
+  } else {
+    NULL
+  }
   display_name <- .sacha_spatial_display_name(species, markdown = TRUE)
   date <- format(Sys.Date(), "%d-%m-%Y")
   captions <- if (identical(variant, "crop")) {
@@ -222,7 +213,8 @@
   if (!is.null(place) && nzchar(place)) id_parts <- c(id_parts, .sacha_spatial_slug(place))
   c(captions, list(
     id = paste(id_parts[nzchar(id_parts)], collapse = "-"),
-    width = size[["width"]], height = size[["height"]]
+    width = if (is.null(size)) NULL else size[["width"]],
+    height = if (is.null(size)) NULL else size[["height"]]
   ))
 }
 

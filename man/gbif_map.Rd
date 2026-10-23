@@ -85,9 +85,10 @@ are supplied, \code{ppp} takes precedence.}
 GBIF; \code{"local"} reads a saved export from \code{sacha_exports} under
 \code{directory}.}
 
-\item{fig_width, fig_height}{Figure dimensions in inches, used only by
-\code{gbif_map_md()}. When \code{NULL}, dimensions are chosen from the aspect ratio
-of the map.}
+\item{fig_width, fig_height}{Figure dimensions in inches for static maps
+produced by \code{gbif_map_md()}. They do not set the size of interactive
+Leaflet maps. When \code{NULL}, static-map dimensions follow the map aspect
+ratio.}
 }
 \value{
 A Leaflet widget or a ggplot2 object. Paths of the written files

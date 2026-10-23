@@ -828,9 +828,10 @@
 #' @param source Occurrence source: `"gbif"` (default) retrieves records from
 #'   GBIF; `"local"` reads a saved export from `sacha_exports` under
 #'   `directory`.
-#' @param fig_width,fig_height Figure dimensions in inches, used only by
-#'   `gbif_map_md()`. When `NULL`, dimensions are chosen from the aspect ratio
-#'   of the map.
+#' @param fig_width,fig_height Figure dimensions in inches for static maps
+#'   produced by `gbif_map_md()`. They do not set the size of interactive
+#'   Leaflet maps. When `NULL`, static-map dimensions follow the map aspect
+#'   ratio.
 #' @return A Leaflet widget or a ggplot2 object. Paths of the written files
 #'   are stored in the `"sacha_files"` attribute, the plotted records in
 #'   `"sacha_occurrences"`, and the species in `"sacha_species"`.
@@ -936,6 +937,7 @@ gbif_map <- function(species,
       boundary = NULL, bbox = NULL
     )
   }
+  if (identical(mode, "interactive")) map$width <- NULL
   attr(map, "sacha_occurrences") <- occurrences
   attr(map, "sacha_files") <- c(image_files, local_files)
   attr(map, "sacha_species") <- species
@@ -977,6 +979,7 @@ gbif_map_md <- function(species,
     overwrite = overwrite,
     source = source
   )
+  if (identical(mode, "interactive")) map$width <- "100%"
   .sacha_spatial_emit_md_map(
     map = map, variant = attr(map, "sacha_map_frame")$variant,
     mode = mode, frame = attr(map, "sacha_map_frame"), species = species,
@@ -1255,9 +1258,10 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #'   `"species"` (default) reads the full-extent export of the species and
 #'   applies the area; `"crop"` reads the export saved for the area.
 #'   It is ignored when `source = "gbif"`.
-#' @param fig_width,fig_height Figure dimensions in inches, used only by
-#'   `gbif_map_crop_md()`. When `NULL`, dimensions are chosen from the aspect
-#'   ratio of the map.
+#' @param fig_width,fig_height Figure dimensions in inches for static maps
+#'   produced by `gbif_map_crop_md()`. They do not set the size of interactive
+#'   Leaflet maps. When `NULL`, static-map dimensions follow the map aspect
+#'   ratio.
 #' @return A Leaflet widget or a ggplot2 object. Paths of the written files
 #'   are stored in the `"sacha_files"` attribute, the plotted records in
 #'   `"sacha_occurrences"`, the species in `"sacha_species"`, and the resolved
@@ -1513,6 +1517,7 @@ gbif_map_crop <- function(species,
       bbox = map_bbox, legend_place = crop_legend_place
     )
   }
+  if (identical(mode, "interactive")) map$width <- NULL
   attr(map, "sacha_occurrences") <- occurrences
   attr(map, "sacha_files") <- c(image_files, local_files)
   attr(map, "sacha_species") <- species
@@ -1562,6 +1567,7 @@ gbif_map_crop_md <- function(species,
     source = source,
     local_export = local_export
   )
+  if (identical(mode, "interactive")) map$width <- "100%"
   .sacha_spatial_emit_md_map(
     map = map, variant = "crop", mode = mode,
     frame = attr(map, "sacha_map_frame"), species = species,

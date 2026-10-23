@@ -1,8 +1,8 @@
 ---
-title: "03. GBIF maps and documented areas"
+title: "Distribution Data, Geographic Areas, and Species Mapping"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{03. GBIF maps and documented areas}
+  %\VignetteIndexEntry{03. Species Distribution and Mapping}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
