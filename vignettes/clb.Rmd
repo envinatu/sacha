@@ -1,5 +1,5 @@
 ---
-title: "02. ChecklistBank taxonomic and nomenclatural data"
+title: "ChecklistBank taxonomic and nomenclatural data with sacha"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{02. ChecklistBank taxonomic and nomenclatural data}

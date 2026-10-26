@@ -1,5 +1,5 @@
 ---
-title: "05. Species reports and Quarto customization"
+title: "Reproducible Biodiversity Research with sacha"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{05. Species reports and Quarto customization}
@@ -9,6 +9,7 @@ vignette: >
 
 ```{r setup, include=FALSE, eval=FALSE}
 library(sacha)
+library(pacha)
 ```
 
 # Start with a taxonomic report
@@ -135,17 +136,38 @@ The first report uses the configured local source and directory. The second over
 
 # Application with pacha
 
-A Quarto application combining `sacha` and `pacha` is presented in the book [*Plantas susceptibles de uso sostenible en la zona andina de la provincia de Cotopaxi, Ecuador*](https://envinatu.github.io/envyura/). For a local-source `sacha_report()`, prepare the matching image and GBIF exports first; the ChecklistBank sections still use their configured service.
+The book [*Plantas susceptibles de uso sostenible en la zona andina de la provincia de Cotopaxi, Ecuador*](https://envinatu.github.io/envyura/) combines `sacha` and `pacha` to prepare species accounts. The workflow uses a local ColDP archive for `pacha`, configures Spanish labels and the iNaturalist observer in `sacha`, and then combines the biodiversity report with information on sustainable uses.
 
-```{r, eval=FALSE, results='asis', echo=TRUE}
-sacha_report(
-  "Bidens andicola",
-  source = "local",
-  user_id = "marceloamores",
-  crop_area = "Ecuador",
-  local_export = "crop",
-  directory = "sacha_data"
+The archive path below is relative to the book project directory. The local iNaturalist images and GBIF occurrence exports for the species must already be available in the working directory used to render the report. The ChecklistBank-backed sections of `sacha_report()` continue to use the configured ChecklistBank service; the local ColDP archive is configured for `pacha`.
+
+```{r book-case-configuration, eval=FALSE}
+library(sacha)
+library(pacha)
+
+pacha_configure(
+  source = "coldp",
+  coldp_zip_file = file.path("plantas-utiles", "ColDP.zip")
 )
 
-pacha_report("Bidens andicola")
+sacha_configure(
+  clb = list(language = "es"),
+  inat = list(language = "es"),
+  spatial = list(language = "es")
+)
+
+sacha_arg_configure(
+  user_id = "marceloamores",
+  crop_box = c(-82.5, -5.5, -75.0, 1.6, "Ecuador continental")
+)
+```
+
+The following calls show the species-account workflow used in the book:
+
+```{r book-case-sacha, eval=FALSE, results='asis', echo=TRUE}
+species <- "Alternanthera porrigens"
+sacha_report(species)
+```
+
+```{r book-case-pacha, eval=FALSE, results='asis', echo=TRUE}
+sustainable_uses_pacha_md(species)
 ```
