@@ -28,19 +28,19 @@ The function accepts the argument names supported by the package's
 taxonomic, spatial, iNaturalist, and report accessors. For report functions,
 defaults for arguments forwarded through \code{...} are also applied unless the
 report call or its forwarded arguments provide a value explicitly. Repeated
-names are rejected to avoid ambiguous settings. The meaning and accepted
-values remain function-specific: for example, \code{source = "local"} applies
-to both GBIF and iNaturalist functions, while \code{"web"} is accepted by
-iNaturalist and reports but a direct GBIF query uses \code{"gbif"} for its web
-source.
+names are rejected to avoid ambiguous settings. Wherever functions expose
+a retrieval source, its accepted values are consistently \code{"web"} and
+\code{"local"}. The exact behavior depends on the function. ChecklistBank and
+ColDP accessors remain web-backed and do not yet expose this selector; a
+future local backend can follow the same choices.
 
-Supported argument names are \code{bib_dir}, \code{catalogue_dataset}, \code{colour},
+Supported argument names are \code{catalogue_dataset}, \code{colour},
 \code{crop_area}, \code{crop_box}, \code{dataset}, \code{directory}, \code{distribution}, \code{dpi},
 \code{export_comp}, \code{export_image}, \code{fig_height}, \code{fig_width}, \code{identifier},
-\code{image_size}, \code{images_directory}, \code{include_auxiliary}, \code{kml}, \code{language},
+\code{image_size}, \code{include_auxiliary}, \code{kml}, \code{language},
 \code{latex_subfigure_width}, \code{limit}, \code{local_export}, \code{mode}, \code{ncol},
 \code{number_observations}, \code{observation_id}, \code{observer_name}, \code{overwrite},
-\code{place_id}, \code{ppp}, \code{quality_grade}, \code{rank}, \code{refresh}, \code{save_bib},
+\code{place_id}, \code{quality_grade}, \code{rank}, \code{refresh}, \code{save_bib},
 \code{save_images}, \code{save_occurrences}, \code{source}, \code{species}, \code{user_id},
 \code{verify_local}, \code{word_subfigure_width}, and \code{zoom_static}.
 

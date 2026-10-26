@@ -1,13 +1,13 @@
 ---
-title: "Getting Started with Sacha for Biodiversity Data and Image Access, Mapping, and Reporting"
+title: "Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{1. Getting Started with Sacha}
+  %\VignetteIndexEntry{01. Getting started with Sacha}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, eval=FALSE}
 library(sacha)
 ```
 
@@ -17,29 +17,41 @@ library(sacha)
 
 Code that queries services, reads user data files, or writes output is shown but not executed when this vignette is built. Its build therefore requires no Internet connection, credentials, locally installed data, or downloads. To run these examples in a project, meet the requirements described in each section.
 
+# First web queries
+
+Most functions can be called with the scientific name alone. These examples use the package defaults: ChecklistBank for taxonomic data, the web for GBIF maps, and the web for iNaturalist images. The iNaturalist call is filtered to the observer used throughout this vignette.
+
+```{r, eval=FALSE}
+sc_full_name("Bidens andicola")
+inat_images("Bidens andicola", user_id = "marceloamores")
+gbif_map("Bidens andicola")
+```
+
+The first call returns text, the second displays observation photographs in the graphics viewer, and the third opens an interactive map. Later sections show how to save those data and use them from local files.
+
 # Function overview
 
 | Area | Main functions | Source or result |
 |:-----------------------|:-----------------------|:-----------------------|
-| Configuration | `sacha_configure()`, `sacha_arg_configure()`, `sacha_clear_cache()` | Module settings, shared argument values, and session cache |
 | Taxonomy and nomenclature | `sc_full_name()`, `first_publicacion()`, `classification()`, `syn_and_comb()`, and their `_md` variants | ChecklistBank taxonomic and nomenclatural records |
 | Names, links, and references | `common_names()`, `indexations()`, `references_sp()`, and their `_md` variants | Vernacular names, record links, and bibliographic references |
-| ColDP download | `save_clb()` | Complete ChecklistBank dataset archive |
+| Photographs | `inat_images()`, `inat_images_md()`, `inat_save_images()` | Licensed photographs from iNaturalist observations |
 | Geographic areas | `locations()`, `locations_md()` | Geographic areas documented by Catalogue of Life through ChecklistBank |
 | Distribution | `gbif_map()`, `gbif_map_md()`, `gbif_map_crop()`, `gbif_map_crop_md()`, `gbif_save_occurrences()` | Georeferenced GBIF records and maps |
-| Photographs | `inat_images()`, `inat_images_md()`, `inat_save_images()` | Licensed photographs from iNaturalist observations |
 | Reports | `sacha_clb_report()`, `sacha_spatial_report()`, `sacha_report()` | Integrated Markdown sections for documents |
+| ColDP download | `save_clb()` | Complete ChecklistBank dataset archive |
+| Configuration | `sacha_configure()`, `sacha_arg_configure()`, `sacha_clear_cache()` | Module settings, shared argument values, and session cache |
 
 Most text and data accessors have an `_md` variant that produces Markdown. The regular variants are intended for interactive use; `_md` variants produce content that can be rendered in a document. The following vignettes explain each group. Public shortcuts for `indexations()` include `ipni_url()`, `gbif_url()`, `inat_url()`, `col_url()`, `wfo_url()`, `tpl_url()`, `itis_url()`, `ncbi_url()`, `irmng_url()`, `worms_url()`, and `eol_url()`. The compatibility alias `gbif_save_ocurrences()` is also exported; the recommended spelling is `gbif_save_occurrences()`.
 
 # Data sources and source options
 
-Source options are module-specific and are not interchangeable.
+Where a function provides `source`, its values are consistently `"web"` and `"local"`; behavior depends on the function, and not all modules expose this selector.
 
 | Module | Option | Behavior |
 |:-----------------------|:-----------------------|:-----------------------|
-| ChecklistBank and Catalogue of Life | Global configuration | Accessors query the configured web service. `save_clb()` downloads a complete ColDP archive, but this does not automatically make the accessors use local data. |
-| GBIF | `source = "gbif"` | Queries GBIF for georeferenced observations. |
+| ChecklistBank and Catalogue of Life | No `source` argument | Accessors query the configured web service. `save_clb()` downloads a complete ColDP archive, but this does not automatically make the accessors use local data. |
+| GBIF | `source = "web"` | Queries GBIF for georeferenced observations. |
 | GBIF | `source = "local"` | Reads occurrence exports previously created by the package's save functions. |
 | iNaturalist | `source = "web"` | Queries the iNaturalist API for observations and photographs. |
 | iNaturalist | `source = "local"` | Uses images and metadata archived by the package's iNaturalist functions. |
@@ -47,47 +59,23 @@ Source options are module-specific and are not interchangeable.
 
 Taxon exports are organized under `sacha_exports/Family_Genus_species`. iNaturalist files are stored in the `inat` subdirectory; GBIF files are stored in the taxon directory and, where applicable, an area subdirectory. Complete ChecklistBank downloads are saved in a `checklistbank_<dataset>` directory.
 
-# Configuration
-
-`sacha_configure()` can inspect or change the global, iNaturalist, and spatial settings independently. See `?sacha_configure` for the available option names and valid values.
-
-```{r, eval=FALSE}
-sacha_configure(
-  global = list(language = "en", dataset = "3LXR"),
-  inat = list(language = "en", default_image_size = "medium"),
-  spatial = list(language = "en", default_limit = 500)
-)
-```
-
-`sacha_arg_configure()` stores shared argument defaults by name. Functions can use these values without repeating them in each call; an argument supplied directly in a call takes precedence over its shared value.
-
-```{r, eval=FALSE}
-sacha_arg_configure(
-  species = "Bidens andicola",
-  number_observations = 1,
-  image_size = "medium"
-)
-
-inat_images(source = "local")
-classification()
-sacha_clear_cache()
-```
-
-The iNaturalist example requires previously archived images. The classification query requires access to the configured service. Therefore, the chunk is not executed when the vignette is built. `sacha_clear_cache()` resets configuration and shared values and clears session caches; it does not delete exported files. It also preserves iNaturalist media-download counters and timers.
-
 # Recommended workflow
 
-1.  Set service options and shared values for the analysis.
-2.  Query or save only the data needed for the taxon and reporting objective.
-3.  Review provenance, query dates, and licenses for the data and media used.
-4.  For repeated renders, reuse compatible local files when available and avoid unnecessary updates.
+1.  Begin with direct web queries and the default settings.
+2.  Save the observations, images, or references needed for the analysis.
+3.  Reuse compatible local files for repeated work and renders.
+4.  Review provenance, query dates, and licenses for the data and media used.
 5.  Assemble the document with `_md` accessors or a report function.
 
 Web queries reflect each provider's data and availability at the time of the query. For reproducible analyses, retain exports and their metadata, record the retrieval date, and document the filters applied. Using local sources in `sacha_report()` reduces GBIF and iNaturalist queries, but does not create a fully offline workflow because ChecklistBank sections still use their configured source.
 
+# Configuration and reports
+
+Start with the defaults shown above. The [species reports vignette](species-reports.html) introduces custom report sections, shared and module-specific settings, and an applied example with `pacha`.
+
 # Next steps
 
 - [ChecklistBank functions](clb.html) for taxonomic, nomenclatural, vernacular, and bibliographic data.
-- [Maps and geographic areas](spatial-maps.html) for `locations()` and GBIF functions.
 - [iNaturalist images](inaturalist-images.html) for filters, attribution, and local files.
+- [Maps and geographic areas](spatial-maps.html) for `locations()` and GBIF functions.
 - [Species reports](species-reports.html) for combining sections and customizing documents.

@@ -9,7 +9,7 @@ sacha_clb_report(
   language = NULL,
   rank = NULL,
   save_bib = FALSE,
-  bib_dir = "."
+  directory = getwd()
 )
 }
 \arguments{
@@ -25,8 +25,9 @@ help page for accepted values and effects.}
 \item{save_bib}{Argument forwarded to \code{\link[=references_sp_md]{references_sp_md()}}; see its help
 page for its effect.}
 
-\item{bib_dir}{Argument forwarded to \code{\link[=references_sp_md]{references_sp_md()}}; see its help
-page for its effect.}
+\item{directory}{Common base directory for file-based package functions.
+References are saved under its \code{sacha_exports} subdirectory when
+\code{save_bib = TRUE}. Defaults to the current working directory.}
 }
 \value{
 Invisibly returns the combined Markdown string, which is also
@@ -42,7 +43,7 @@ the corresponding \verb{_md} accessor so that the individual formatting and
 source-handling rules remain in effect.
 }
 \details{
-Supply \code{species}, \code{language}, \code{rank}, \code{save_bib}, and \code{bib_dir} directly,
+Supply \code{species}, \code{language}, \code{rank}, \code{save_bib}, and \code{directory} directly,
 or set shared argument defaults beforehand with \code{\link[=sacha_arg_configure]{sacha_arg_configure()}}.
 Values supplied to \code{sacha_clb_report()} take precedence over configured
 defaults.
@@ -52,12 +53,12 @@ defaults.
 species <- "Genus species"
 sacha_clb_report(
   species, language = "en", rank = "family",
-  save_bib = FALSE, bib_dir = "bibliography"
+  save_bib = FALSE, directory = "bibliography"
 )
 
 sacha_arg_configure(
   species = species, language = "en", rank = "family",
-  save_bib = FALSE, bib_dir = "bibliography"
+  save_bib = FALSE, directory = "bibliography"
 )
 sacha_clb_report()
 sacha_clear_cache()

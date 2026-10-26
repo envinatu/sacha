@@ -11,7 +11,7 @@ locations_md(species, language = NULL)
 }
 \arguments{
 \item{species}{A binomial scientific name in the form \code{"Genus species"},
-e.g. \code{"Bidens andicola"}, \code{"Cinchona officinalis"}, or \code{"Puma concolor"}.}
+e.g. \code{"Bidens andicola"}, or \code{"Puma concolor"}.}
 
 \item{language}{Display language: \code{"es"} (default) or \code{"en"}, or any
 other alias defined in the package's language files.}

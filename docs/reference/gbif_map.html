@@ -37,18 +37,21 @@ report (Quarto or R Markdown)."><meta property="og:image" content="/logo.png"><!
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul></li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
   <a href="https://github.com/envinatu/sacha/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
@@ -77,8 +80,8 @@ report (Quarto or R Markdown).</p>
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gbif_map</span><span class="op">(</span></span>
-<span>  <span class="va">species</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">100000L</span>,</span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  limit <span class="op">=</span> <span class="fl">50000L</span>,</span>
 <span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"interactive"</span>, <span class="st">"static"</span><span class="op">)</span>,</span>
 <span>  save_occurrences <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  export_image <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -86,14 +89,17 @@ report (Quarto or R Markdown).</p>
 <span>  colour <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom_static <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dpi <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ppp <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gbif"</span>, <span class="st">"local"</span><span class="op">)</span></span>
+<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"web"</span>, <span class="st">"local"</span><span class="op">)</span>,</span>
+<span>  taxon_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  generate_doi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  date <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  static_legend_position <span class="op">=</span> <span class="st">"bottomleft"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">gbif_map_md</span><span class="op">(</span></span>
-<span>  <span class="va">species</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">100000L</span>,</span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  limit <span class="op">=</span> <span class="fl">50000L</span>,</span>
 <span>  mode <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save_occurrences <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  export_image <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -101,11 +107,14 @@ report (Quarto or R Markdown).</p>
 <span>  colour <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom_static <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dpi <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ppp <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  fig_width <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fig_height <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gbif"</span>, <span class="st">"local"</span><span class="op">)</span></span>
+<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"web"</span>, <span class="st">"local"</span><span class="op">)</span>,</span>
+<span>  taxon_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  generate_doi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  date <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  static_legend_position <span class="op">=</span> <span class="st">"bottomleft"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -116,14 +125,15 @@ report (Quarto or R Markdown).</p>
 <dl><dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
 <dd><p>A binomial scientific name in the form <code>"Genus species"</code>,
 e.g. <code>"Bidens andicola"</code>, <code>"Cinchona officinalis"</code>, or <code>"Puma concolor"</code>. GBIF must resolve it as an exact species-level name; spelling
-variants and higher-rank matches are rejected.</p></dd>
+variants and higher-rank matches are rejected. Supply exactly one of
+<code>species</code> or <code>taxon_id</code>.</p></dd>
 
 
 <dt id="arg-limit">limit<a class="anchor" aria-label="anchor" href="#arg-limit"></a></dt>
-<dd><p>Maximum number of georeferenced occurrences used to draw the
-map, an integer between <code>1</code> and <code>100000</code>, e.g. <code>100</code>, <code>500</code>, or <code>2000</code>.
+<dd><p>Maximum number of georeferenced occurrences used to draw and
+save, an integer between <code>1</code> and <code>100000</code>, e.g. <code>100</code>, <code>500</code>, or <code>2000</code>.
 With a local source, the first <code>limit</code> records of the saved export are
-used. Defaults to <code>100000</code>.</p></dd>
+used. Defaults to <code>50000</code>.</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
@@ -133,10 +143,11 @@ interactive map for HTML output and a static map for other formats.</p></dd>
 
 
 <dt id="arg-save-occurrences">save_occurrences<a class="anchor" aria-label="anchor" href="#arg-save-occurrences"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, the complete set of
-georeferenced records for the same validated GBIF taxon key is saved as
-<code>occurrences.gpkg</code> with its provenance file <code>metadata.json</code> under
-<code>sacha_exports/Family_Genus_species</code>. Defaults to <code>FALSE</code>.</p></dd>
+<dd><p>Logical. If <code>TRUE</code>, up to <code>limit</code> georeferenced
+records are saved as <code>occurrences.gpkg</code> under
+<code>sacha_exports/Family_Genus_species</code>, with <code>metadata.json</code> describing the
+query. <code>generate_doi = TRUE</code> adds the official DOI for a registered GBIF
+download. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-export-image">export_image<a class="anchor" aria-label="anchor" href="#arg-export-image"></a></dt>
@@ -167,11 +178,6 @@ the occurrences? It applies to static maps and exported images. When
 the package default resolution is used.</p></dd>
 
 
-<dt id="arg-ppp">ppp<a class="anchor" aria-label="anchor" href="#arg-ppp"></a></dt>
-<dd><p>Spanish-language synonym of <code>dpi</code> (puntos por pulgada). If both
-are supplied, <code>ppp</code> takes precedence.</p></dd>
-
-
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
 <dd><p>Logical. Should existing output files be replaced? If
 <code>FALSE</code>, an existing local occurrence export raises an error. Defaults to
@@ -179,15 +185,48 @@ are supplied, <code>ppp</code> takes precedence.</p></dd>
 
 
 <dt id="arg-source">source<a class="anchor" aria-label="anchor" href="#arg-source"></a></dt>
-<dd><p>Occurrence source: <code>"gbif"</code> (default) retrieves records from
+<dd><p>Occurrence source: <code>"web"</code> (default) retrieves records from
 GBIF; <code>"local"</code> reads a saved export from <code>sacha_exports</code> under
 <code>directory</code>.</p></dd>
 
 
+<dt id="arg-taxon-id">taxon_id<a class="anchor" aria-label="anchor" href="#arg-taxon-id"></a></dt>
+<dd><p>A COL XR alphanumeric species usage key, such as <code>"Q2M4"</code>.
+GBIF resolves the key against the configured checklist and verifies that
+it identifies one species-level taxon. Supply exactly one of <code>taxon_id</code>
+or <code>species</code>.</p></dd>
+
+
+<dt id="arg-generate-doi">generate_doi<a class="anchor" aria-label="anchor" href="#arg-generate-doi"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> and <code>source = "web"</code>, create and wait
+for a registered GBIF download, retrieve its DOI, and use at most <code>limit</code>
+records. This requires GBIF account credentials. If <code>FALSE</code> (default),
+use the faster occurrence-search API without waiting for a DOI. For a
+local source, no GBIF request is made.</p></dd>
+
+
+<dt id="arg-date">date<a class="anchor" aria-label="anchor" href="#arg-date"></a></dt>
+<dd><p>Optional ISO date or range such as
+<code>"2020-01-01,2021-01-01"</code>. It filters GBIF occurrence datasets by their
+registry <code>createdDate</code>, then filters records by the matching dataset keys.
+It does not filter the date on which an occurrence was observed. Local
+exports can use only the same date filter recorded in their metadata.</p></dd>
+
+
+<dt id="arg-static-legend-position">static_legend_position<a class="anchor" aria-label="anchor" href="#arg-static-legend-position"></a></dt>
+<dd><p>Position of the static legend as one composed
+unit with its scale bar and north arrow. Applies to static maps and PNGs
+written with <code>export_image = TRUE</code>, including when <code>mode</code> is
+<code>"interactive"</code>: <code>"bottomleft"</code> (default), <code>"bottom"</code>,
+<code>"bottomright"</code>, <code>"right"</code>, <code>"topright"</code>, <code>"top"</code>, <code>"topleft"</code>, or
+<code>"left"</code>. It does not change the interactive map widget.</p></dd>
+
+
 <dt id="arg-fig-width-fig-height">fig_width, fig_height<a class="anchor" aria-label="anchor" href="#arg-fig-width-fig-height"></a></dt>
-<dd><p>Figure dimensions in inches, used only by
-<code>gbif_map_md()</code>. When <code>NULL</code>, dimensions are chosen from the aspect ratio
-of the map.</p></dd>
+<dd><p>Dimensions in inches for static maps produced
+by <code>gbif_map_md()</code>. When <code>NULL</code>, the static map dimensions follow its
+aspect ratio. Interactive Leaflet maps use the widget and output
+container's default sizing.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -199,9 +238,10 @@ are stored in the <code>"sacha_files"</code> attribute, the plotted records in
     </div>
     <div id="details">
     <h2>Details</h2>
-    <p>With <code>source = "gbif"</code> (default), the supplied binomial is first resolved
-by GBIF as an exact, species-level name in the configured checklist (COL
-Extended Release by default). The resulting taxon key and the same
+    <p>With <code>source = "web"</code> (default), supply exactly one of <code>species</code> or
+<code>taxon_id</code>. GBIF resolves the binomial as an exact, species-level name or
+validates the COL XR usage key as an exact species-level taxon. The
+resulting taxon key and the same
 checklist key are used to retrieve records with coordinates. This prevents
 approximate name matches and keeps records tied to one accepted GBIF
 taxonomic concept. With
@@ -209,13 +249,26 @@ taxonomic concept. With
 <code>save_occurrences = TRUE</code> or by <code><a href="gbif_save_occurrences.html">gbif_save_occurrences()</a></code>, and GBIF is not
 contacted. Local exports are stored under
 <code>sacha_exports/Family_Genus_species</code> inside <code>directory</code>.</p>
-<p>Setting <code>save_occurrences = TRUE</code> retrieves every available georeferenced
-record (independently of <code>limit</code>) and stores it as a GeoPackage in WGS 84
-(EPSG:4326) with all GBIF fields, together with a JSON file describing the
-exact name match, taxon key, query, retrieval date, coordinate reference
-system, and record count. When
-<code>source = "local"</code>, the records already reside in a saved export and
-nothing is written.</p>
+<p>Setting <code>save_occurrences = TRUE</code> stores up to <code>limit</code> georeferenced
+records as a GeoPackage in WGS 84 (EPSG:4326), together with a JSON file
+describing the exact taxon match, query, date filter, retrieval date,
+coordinate reference system, and record count. By default,
+<code>generate_doi = FALSE</code> uses the fast GBIF occurrence search and does not wait
+for a registered download or DOI. Set <code>generate_doi = TRUE</code> to create and wait
+for a registered download; its DOI is recorded in <code>metadata.json</code> and in the
+map's <code>sacha_gbif_download</code> attribute. This requires <code>GBIF_USER</code>,
+<code>GBIF_PWD</code>, and <code>GBIF_EMAIL</code> credentials. With <code>source = "local"</code>,
+<code>generate_doi</code> does not contact GBIF and no new export is written.</p>
+<p>Configure the GBIF account credentials in the current R session with
+<code>Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password", GBIF_EMAIL = "your_account_email")</code>. To keep them available in future
+sessions, add the same three variables to your personal <code>~/.Renviron</code> file
+and restart R. Do not share or publish that file.</p>
+<p>The default <code>limit</code> of 50,000 is intended to keep routine queries
+manageable. For species with larger occurrence sets, such as
+<code>Amaranthus hybridus</code>, reuse a local export or restrict the records with
+<code>date</code>. For a spatially filtered retrieval, use <code><a href="gbif_map_crop.html">gbif_map_crop()</a></code> or
+<code><a href="gbif_save_occurrences.html">gbif_save_occurrences()</a></code>: country areas and geometric boundaries are sent
+to GBIF before records are returned.</p>
 <p>Interactive maps show the scientific name, year, locality, and observer
 (<code>recordedBy</code>) reported by GBIF for each occurrence. Missing values are
 displayed as unavailable.</p>
@@ -226,6 +279,17 @@ the value of <code>mode</code>, to the same directory as the saved occurrences
 error explicitly worded as a communication failure is raised. It is
 distinct from the error raised when GBIF responds successfully but holds no
 georeferenced records for the species.</p>
+<p><code>date</code> selects occurrence datasets by their GBIF registry creation date
+(<code>createdDate</code>) and then filters records to those datasets; it is not the
+date when an individual occurrence was observed. This registry lookup is
+separate from the occurrence search. GBIF uses the Catalogue of Life
+Extended Release (COL XR) as the taxonomic reference for occurrence
+downloads. When <code>generate_doi = TRUE</code>, the export's <code>metadata.json</code> records
+its official download DOI and link. By downloading the data, you acknowledge GBIF's
+<a href="https://www.gbif.org/terms/data-user" class="external-link">data-use agreement</a>. When citing or
+referring to registered downloads (<code>generate_doi = TRUE</code>), follow GBIF's
+<a href="https://www.gbif.org/citation-guidelines#occDataDownload" class="external-link">citation guidelines</a>
+and include the DOI assigned to that specific download in every publication.</p>
 <p>In Markdown reports, <code>gbif_map_md()</code> assigns a stable Quarto figure ID from
 the map type and species name. For <code>"Bidens andicola"</code>, the full-extent map
 is <code>fig-gbif-map-bidens_andicola</code>. Use that ID in a cross-reference
@@ -239,15 +303,16 @@ that the generated figure markup is interpreted by the document renderer.</p>
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="va">map</span> <span class="op">&lt;-</span> <span class="fu">gbif_map</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, limit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">map_by_key</span> <span class="op">&lt;-</span> <span class="fu">gbif_map</span><span class="op">(</span>taxon_id <span class="op">=</span> <span class="st">"Q2M4"</span>, limit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">map</span></span></span>
-<div id="htmlwidget-ac96cb3ee4656e2e9ec3" style="width:100%;height:432.632880098888px;" class="leaflet html-widget"></div>
+<div id="htmlwidget-ac96cb3ee4656e2e9ec3" style="width:700px;height:432.632880098888px;" class="leaflet html-widget"></div>
 <script type="application/json" data-for="htmlwidget-ac96cb3ee4656e2e9ec3">{"x":{"options":{"minZoom":0,"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}},"worldCopyJump":true,"zoomControl":true,"attributionControl":true,"zoomSnap":0,"fullscreenControl":{"position":"topright","pseudoFullscreen":false}},"calls":[{"method":"setMaxBounds","args":[-90,-180,90,180]},{"method":"addProviderTiles","args":["Esri.WorldGrayCanvas",null,"Esri.WorldGrayCanvas",{"errorTileUrl":"","noWrap":false,"detectRetina":false}]},{"method":"addProviderTiles","args":["Esri.WorldImagery",null,"Esri.WorldImagery",{"errorTileUrl":"","noWrap":false,"detectRetina":false}]},{"method":"addProviderTiles","args":["Esri.WorldTopoMap",null,"Esri.WorldTopoMap",{"errorTileUrl":"","noWrap":false,"detectRetina":false}]},{"method":"addProviderTiles","args":["OpenStreetMap.Mapnik",null,"OpenStreetMap.Mapnik",{"errorTileUrl":"","noWrap":false,"detectRetina":false}]},{"method":"addLayersControl","args":[["Esri.WorldGrayCanvas","Esri.WorldImagery","Esri.WorldTopoMap","OpenStreetMap.Mapnik"],[],{"collapsed":true,"autoZIndex":true,"position":"topright","position.1":"topright"}]},{"method":"addCircleMarkers","args":[[-0.6414609999999999,-0.221471,-0.537203,-0.525112,-0.563425,-0.599098,0.037692,-0.346865,-0.53708,0.021553,0.021555,-0.490497,-0.055944,-0.224054,-2.805306,-0.349723,-2.866972,-26.740809,-0.613995,-32.979126,-10.668139,-0.619312,-0.612472,-25.16221,-0.611888,-0.421194,-0.484486,-0.408478,-0.619681,-0.513869,-0.617923,-0.200333,-0.513903,-2.971384,-0.331024,-0.616842,-0.537058,-0.480384,-0.632081,-0.216114,-0.6141,-0.612247,-0.1407,-0.6097939999999999,-0.618842,-0.612388,-0.619902,-32.523298,-0.53711,-0.415837,0.155861,-0.484944,-0.6456,0.15,-1.265055,-1.500712,-0.362068,-0.61183,-1.502726,-0.6456,-0.340938,-0.458097,-0.495809,-0.166447,-0.498128,-0.536925,0.279462,-0.484992,-0.124868,-1.171282,-2.860008,-0.164089,-0.165094,0.03542,-16.533798,-16.533961,-16.553367,-16.533841,-22.238068,-22.237692,-16.549817,-22.238098,-2.894547,-0.144616,0.04424,-0.094961,-0.164176,-22.78123,-2.893827,-1.515717,-3.12463,-2.894357,-0.484538,-4.041964,-2.729206,-0.372056,-22.274519,-22.255194,-22.234881,-0.104761],[-78.49587200000001,-78.588477,-78.227203,-78.211709,-78.443253,-78.488625,-78.45347,-78.40807700000001,-78.22413400000001,-78.50432000000001,-78.50431500000001,-78.28510799999999,-78.06073000000001,-78.499004,-79.312225,-78.15113599999999,-78.64863200000001,-65.77283199999999,-78.47322,-69.363528,-76.7205,-78.57391699999999,-78.575813,-65.84031,-78.57418,-78.358406,-78.30122799999999,-78.539997,-78.573725,-78.217803,-78.573362,-78.507694,-78.21811700000001,-78.772148,-78.156862,-78.46203,-78.227295,-78.30343499999999,-78.442739,-78.44008599999999,-78.47305,-78.57399700000001,-78.48742300000001,-78.456001,-78.57326399999999,-78.575722,-78.57373200000001,-69.03549,-78.22730900000001,-78.35196000000001,-78.127205,-78.141672,-78.43473,-78.666667,-78.744883,-78.876862,-78.149618,-78.4795,-78.88432299999999,-78.43473,-78.43534699999999,-78.319245,-78.437454,-78.344545,-78.434031,-78.227403,-78.115769,-78.301175,-78.363255,-78.590846,-78.89431500000001,-78.461028,-78.460633,-78.48728199999999,-68.129169,-68.128967,-68.07107999999999,-68.129767,-65.017077,-65.019803,-68.092462,-65.01692799999999,-78.921356,-78.485463,-78.452911,-78.480363,-78.460948,-65.25500700000001,-78.92167600000001,-78.82968200000001,-79.166315,-78.920351,-78.30124499999999,-79.20410099999999,-79.073311,-78.156308,-65.096503,-65.120636,-65.031167,-78.21547],4,null,null,{"interactive":true,"className":"","stroke":false,"color":"#0A8CE6","weight":5,"opacity":0.5,"fill":true,"fillColor":"#0A8CE6","fillOpacity":0.7},null,null,["<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Jacob Saucier<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> emmyzeilstra<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> joemeisel<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Jacob Saucier<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Seebra Young<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> richfisc<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> fabetancourt23<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> jimzonneveld<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Luis Y. Santiago-Rosario<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Eugenia Enríquez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> craydg<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Caleb Villar<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> Martha López<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Tucumán<br><b>Observer:<\/b> Santiago<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> beccaharris<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Mendoza<br><b>Observer:<\/b> Daniela Quintana<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Lima<br><b>Observer:<\/b> Lucely L. Vilca Bustamante<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Kaloni Toapanta<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Luciana Pérez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Remco Hofland<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Marilin Sofía Mayorga Viñas<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Dayuma Avendaño<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> David Lara<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> NikoDrash Quishpe<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> Kirk Lawson<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Ted Goshulak<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Scott Ramos<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> henryedelman<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Marilin Sofía Mayorga Viñas<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Esteban Poveda<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Marilin Sofía Mayorga Viñas<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Cotopaxi<br><b>Observer:<\/b> Pame Reinoso<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Mendoza<br><b>Observer:<\/b> pabloscazzina<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> mocharlie<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Marcos Espinosa<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Billy Bensted-Smith<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Juan Arias Bermeo<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Guillermo C. Amico<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Marcelo Donoso<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Tungurahua<br><b>Observer:<\/b> Joselyn Chisag<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Bolivar<br><b>Observer:<\/b> Clément panisse<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Daniel Eskildsen<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> jaimieb<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Bolivar<br><b>Observer:<\/b> Célya TALBOT<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Guillermo C. Amico<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Marilin Sofía Mayorga Viñas<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Naomi<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Eric Gren<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> David Torres<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Kevin Metcalf<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Imbabura<br><b>Observer:<\/b> Adriana<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Kevin Metcalf<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> samanthanreyes<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Tungurahua<br><b>Observer:<\/b> martinaguevara<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> Francisco Prieto Albuja<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Sebastián Ordóñez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Monica Caiza<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> La Paz<br><b>Observer:<\/b> Luz Evelin Apaza<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> La Paz<br><b>Observer:<\/b> Luz Evelin Apaza<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> La Paz<br><b>Observer:<\/b> Luz Evelin Apaza<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> La Paz<br><b>Observer:<\/b> Luz Evelin Apaza<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Hugo Hulsberg<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Hugo Hulsberg<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> La Paz<br><b>Observer:<\/b> Omar Miranda B.<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Hugo Hulsberg<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> Emily Lara Mena<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Eugenia Enríquez<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Monica Caiza<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Rafaella Cevallos Larrea<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Camila Utreras<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Ariadna Tripaldi<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> Mario Humberto Yánez-Muñoz<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Chimborazo<br><b>Observer:<\/b> lukekfriedman<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> lukekfriedman<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> jorgebrito<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> Douglas J. Long<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Loja<br><b>Observer:<\/b> Jennyffer Luzuriaga<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Azuay<br><b>Observer:<\/b> Emily Lara Mena<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Napo<br><b>Observer:<\/b> Anders Haglund<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Carlos Schmidtutz<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Carlos Schmidtutz<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Salta<br><b>Observer:<\/b> Carlos Schmidtutz<\/div>","<div style='font-family: sans-serif;'><b>Bidens andicola Kunth<\/b><br><b>Year:<\/b> 2026<br><b>Locality:<\/b> Pichincha<br><b>Observer:<\/b> mateo_encalada21<\/div>"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addControl","args":["<div class='sacha-legend-box' style='background:rgba(255,255,255,0.8); padding:6px 10px; border-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,0.25); margin:10px; font-size:12px; line-height:1.3;'><div style='display:flex;align-items:center;'>\n       <span style='display:inline-block;box-sizing:border-box;width:8px;height:8px;margin:0 8px 0 2px;background:#0A8CE6B3;border-radius:50%;'><\/span><em>Bidens andicola<\/em>\n     <\/div><\/div>","bottomleft",null,"sacha-legend-control"]}],"limits":{"lat":[-32.979126,0.279462],"lng":[-79.312225,-65.01692799999999]},"fitBounds":[-34.97464128,-86.72186834647736,2.274977280000005,-57.60728465352262,{"padding":[0,0],"animate":false}]},"evals":[],"jsHooks":[]}</script><span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, save_occurrences <span class="op">=</span> <span class="cn">TRUE</span>, export_image <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"local"</span>, mode <span class="op">=</span> <span class="st">"static"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">gbif_map_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"gbif"</span>, mode <span class="op">=</span> <span class="st">"interactive"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">gbif_map_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"gbif"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
+<span class="r-in"><span><span class="fu">gbif_map_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"web"</span>, mode <span class="op">=</span> <span class="st">"interactive"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">gbif_map_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"web"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
 <span class="r-in"><span>            limit <span class="op">=</span> <span class="fl">500</span>, export_image <span class="op">=</span> <span class="cn">TRUE</span>, save_occurrences <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"local"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
 <span class="r-in"><span>            limit <span class="op">=</span> <span class="fl">500</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, export_image <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>

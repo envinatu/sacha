@@ -7,25 +7,148 @@
   }
 }
 
-.sacha_spatial_gbif_taxon <- function(species) {
+.sacha_spatial_validate_taxon_id <- function(taxon_id) {
+  if (!is.character(taxon_id) || length(taxon_id) != 1L || is.na(taxon_id)) {
+    stop("`taxon_id` must be one non-missing COL XR alphanumeric taxon key, e.g. 'Q2M4'.",
+         call. = FALSE)
+  }
+  taxon_id <- trimws(taxon_id)
+  if (!grepl("^[[:alnum:]]+$", taxon_id) || !grepl("[[:alpha:]]", taxon_id)) {
+    stop("`taxon_id` must be an alphanumeric COL XR taxon key, e.g. 'Q2M4'.",
+         call. = FALSE)
+  }
+  taxon_id
+}
+
+.sacha_spatial_taxon_input <- function(species = NULL, taxon_id = NULL) {
+  if (is.null(species) == is.null(taxon_id)) {
+    stop("Supply exactly one of `species` or `taxon_id`.", call. = FALSE)
+  }
+  if (!is.null(species)) {
+    return(list(species = .sacha_spatial_validate_species(species), taxon_id = NULL))
+  }
+  list(species = NULL, taxon_id = .sacha_spatial_validate_taxon_id(taxon_id))
+}
+
+.sacha_spatial_apply_taxon_arg_defaults <- function(frame, call, formal_names) {
+  supplied <- names(as.list(call)[-1L])
+  .sacha_apply_arg_defaults(frame, call, formal_names)
+  if ("taxon_id" %in% supplied && !("species" %in% supplied)) {
+    assign("species", NULL, envir = frame)
+  }
+  if ("species" %in% supplied && !("taxon_id" %in% supplied)) {
+    assign("taxon_id", NULL, envir = frame)
+  }
+  invisible(NULL)
+}
+
+.sacha_spatial_validate_date <- function(date) {
+  if (is.null(date)) return(NULL)
+  if (!is.character(date) || length(date) != 1L || is.na(date)) {
+    stop("`date` must be one ISO date or an ISO date range, e.g. '2020-01-01,2021-01-01'.",
+         call. = FALSE)
+  }
+  date <- trimws(date)
+  comma_count <- lengths(regmatches(date, gregexpr(",", date, fixed = TRUE)))
+  if (comma_count > 1L || grepl("^,|,$", date)) {
+    stop("`date` must be one ISO date or an ordered pair of ISO dates separated by a comma.",
+         call. = FALSE)
+  }
+  values <- trimws(strsplit(date, ",", fixed = TRUE)[[1L]])
+  valid_date <- function(value) {
+    grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value) &&
+      !is.na(suppressWarnings(as.Date(value, format = "%Y-%m-%d")))
+  }
+  if (!(length(values) %in% c(1L, 2L)) || !all(vapply(values, valid_date, logical(1)))) {
+    stop("`date` must be an ISO date or an ordered pair of ISO dates separated by a comma.",
+         call. = FALSE)
+  }
+  if (length(values) == 2L && as.Date(values[1L]) > as.Date(values[2L])) {
+    stop("The start date in `date` must not be later than its end date.", call. = FALSE)
+  }
+  paste(values, collapse = ",")
+}
+
+.sacha_spatial_gbif_dataset_keys <- function(date) {
+  if (is.null(date)) return(NULL)
   .sacha_spatial_require("rgbif")
-  species <- .sacha_spatial_validate_species(species)
+  datasets <- tryCatch(
+    .sacha_spatial_with_retry(
+      function() rgbif::dataset_export(type = "OCCURRENCE", createdDate = date),
+      max_tries = .sacha_spatial_config$http_max_tries
+    ),
+    error = function(e) e
+  )
+  if (inherits(datasets, "error") || inherits(datasets, "condition")) {
+    stop(sprintf("Could not find GBIF occurrence datasets created within `%s`: %s.",
+                 date, conditionMessage(datasets)), call. = FALSE)
+  }
+  datasets <- as.data.frame(datasets)
+  if (!nrow(datasets)) return(character())
+  if (!("key" %in% names(datasets))) {
+    stop("GBIF dataset search did not return dataset keys for the `date` filter.",
+         call. = FALSE)
+  }
+  keys <- unique(as.character(datasets$key))
+  keys <- keys[!is.na(keys) & nzchar(keys)]
+  if (length(keys) > 100000L) {
+    stop("The `date` filter matched more than 100000 GBIF occurrence datasets; narrow the date range.",
+         call. = FALSE)
+  }
+  keys
+}
+
+.sacha_spatial_filter_local_dataset_date <- function(occurrences, metadata, date) {
+  if (is.null(date)) return(occurrences)
+  dataset_filter <- metadata$dataset_filter %spatial||% NULL
+  if (is.null(dataset_filter) || !identical(dataset_filter$createdDate, date) ||
+      is.null(dataset_filter$datasetKeys)) {
+    stop("This local export was not saved with the same `date` filter. Create a GBIF export with that date range first.",
+         call. = FALSE)
+  }
+  if (!("datasetKey" %in% names(occurrences))) {
+    stop("The local export does not include `datasetKey`, so its `date` filter cannot be applied.",
+         call. = FALSE)
+  }
+  occurrences[as.character(occurrences$datasetKey) %in% unlist(dataset_filter$datasetKeys),
+              , drop = FALSE]
+}
+
+.sacha_spatial_gbif_taxon <- function(species = NULL, taxon_id = NULL) {
+  .sacha_spatial_require("rgbif")
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  species <- input$species
+  taxon_id <- input$taxon_id
   checklist_key <- .sacha_spatial_gbif_checklist_key()
-  key <- .sacha_spatial_cache_key(species)
+  key <- if (is.null(taxon_id)) {
+    .sacha_spatial_cache_key(species)
+  } else {
+    paste("taxon_id", taxon_id, checklist_key, sep = "|")
+  }
   cached <- .sacha_spatial_cache_get(key)
   if (!is.null(cached) && !is.null(cached$taxon) &&
       identical(cached$taxon$status, "ok") &&
       identical(cached$taxon$checklist_key, checklist_key) &&
       .sacha_spatial_cache_fresh(cached$taxon$fetched_at)) {
-    return(cached$taxon)
+    cached_taxon <- cached$taxon
+    cached_taxon$input_name <- species %spatial||% cached_taxon$canonical_name
+    cached_taxon$input_taxon_id <- taxon_id
+    if (!is.null(taxon_id)) cached_taxon$match_type <- "EXACT"
+    return(cached_taxon)
   }
 
   response <- tryCatch(
     .sacha_spatial_with_retry(
-      function() rgbif::name_backbone(
-        name = species, rank = "species", strict = TRUE,
-        checklistKey = checklist_key
-      ),
+      function() {
+        if (is.null(taxon_id)) {
+          rgbif::name_backbone(
+            name = species, rank = "species", strict = TRUE,
+            checklistKey = checklist_key
+          )
+        } else {
+          rgbif::name_backbone(usageKey = taxon_id, checklistKey = checklist_key)
+        }
+      },
       max_tries = .sacha_spatial_config$http_max_tries
     ),
     error = function(e) e
@@ -47,33 +170,130 @@
   taxon_key <- field("usageKey")
   match_type <- toupper(field("matchType"))
   rank <- toupper(field("rank"))
-  if (is.na(taxon_key) || !identical(match_type, "EXACT") || !identical(rank, "SPECIES")) {
+  taxon_status <- toupper(field("status"))
+  accepted_taxon <- identical(taxon_status, "ACCEPTED")
+  exact_name <- is.null(taxon_id) && identical(match_type, "EXACT")
+  exact_key <- !is.null(taxon_id) && !is.na(taxon_key) && identical(taxon_key, taxon_id)
+  if (is.na(taxon_key) || !(exact_name || exact_key) || !identical(rank, "SPECIES") ||
+      !accepted_taxon) {
     return(list(
       status = "error",
       message = sprintf(
-        "GBIF could not resolve '%s' as an exact species-level name (match type: %s; rank: %s).",
-        species, ifelse(is.na(match_type), "unavailable", match_type),
-        ifelse(is.na(rank), "unavailable", rank)
+        "GBIF could not resolve %s as one exact accepted species-level taxon in COL Extended Release (match type: %s; rank: %s; status: %s).",
+        if (is.null(taxon_id)) sQuote(species) else sprintf("taxon_id %s", sQuote(taxon_id)),
+        ifelse(is.na(match_type), "unavailable", match_type),
+        ifelse(is.na(rank), "unavailable", rank),
+        ifelse(is.na(taxon_status), "unavailable", taxon_status)
       ),
       fetched_at = Sys.time(), error_type = "taxonomy"
     ))
   }
-  accepted_name <- field("scientificName")
-  if (is.na(accepted_name)) accepted_name <- field("canonicalName")
+  canonical_name <- field("canonicalName")
+  accepted_name <- if (!is.na(canonical_name)) canonical_name else field("scientificName")
+  if (is.na(accepted_name)) accepted_name <- species
+  if (is.null(accepted_name) || is.na(accepted_name)) {
+    return(list(
+      status = "error",
+      message = "GBIF did not return a canonical species name for the exact COL XR taxon.",
+      fetched_at = Sys.time(), error_type = "taxonomy"
+    ))
+  }
+  if (is.na(canonical_name)) canonical_name <- accepted_name
   result <- list(
-    status = "ok", key = taxon_key, input_name = species,
+    status = "ok", key = taxon_key, input_name = species %spatial||% accepted_name,
+    input_taxon_id = taxon_id,
     accepted_name = accepted_name %spatial||% species,
-    match_type = match_type, rank = rank,
+    canonical_name = canonical_name,
+    match_type = match_type %spatial||% if (!is.null(taxon_id)) "EXACT" else NULL,
+    rank = rank,
     checklist_key = checklist_key,
     fetched_at = Sys.time()
   )
-  cached <- cached %spatial||% list(species = species)
+  cached <- cached %spatial||% list(species = result$canonical_name)
   cached$taxon <- result
   .sacha_spatial_cache_set(key, cached)
+  species_key <- .sacha_spatial_cache_key(result$canonical_name)
+  species_cached <- .sacha_spatial_cache_get(species_key) %spatial||% list(species = result$canonical_name)
+  species_cached$taxon <- result
+  .sacha_spatial_cache_set(species_key, species_cached)
   result
 }
 
-.sacha_spatial_gbif_occurrences <- function(species, limit = NULL) {
+.sacha_spatial_resolve_taxon_input <- function(species = NULL, taxon_id = NULL) {
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  taxon <- .sacha_spatial_gbif_taxon(input$species, input$taxon_id)
+  if (!identical(taxon$status, "ok")) {
+    input_label <- input$species %spatial||%
+      sprintf("taxon_id %s", input$taxon_id)
+    .sacha_spatial_stop_gbif_error(taxon, input_label)
+  }
+  list(
+    species = .sacha_spatial_validate_species(taxon$canonical_name),
+    taxon_id = input$taxon_id,
+    taxon = taxon
+  )
+}
+
+.sacha_spatial_gbif_occurrence_search_by_datasets <- function(taxon, dataset_keys,
+                                                             limit = NULL) {
+  if (!length(dataset_keys)) return(list(data = data.frame()))
+  dataset_groups <- split(dataset_keys, ceiling(seq_along(dataset_keys) / 50L))
+  pages <- list()
+  retrieved <- 0L
+  for (dataset_group in dataset_groups) {
+    if (!is.null(limit) && retrieved >= limit) break
+    dataset_key <- paste(dataset_group, collapse = ";")
+    if (!is.null(limit)) {
+      page <- .sacha_spatial_with_retry(
+        function() rgbif::occ_search(
+          taxonKey = taxon$key, checklistKey = taxon$checklist_key,
+          hasCoordinate = TRUE, datasetKey = dataset_key,
+          limit = limit - retrieved
+        ),
+        max_tries = .sacha_spatial_config$http_max_tries
+      )
+      page_data <- page$data %spatial||% data.frame()
+      if (nrow(page_data)) {
+        pages[[length(pages) + 1L]] <- page_data
+        retrieved <- retrieved + nrow(page_data)
+      }
+    } else {
+      page_size <- 300L
+      start <- 0L
+      repeat {
+        page <- .sacha_spatial_with_retry(
+          function() rgbif::occ_search(
+            taxonKey = taxon$key, checklistKey = taxon$checklist_key,
+            hasCoordinate = TRUE, datasetKey = dataset_key,
+            limit = page_size, start = start
+          ),
+          max_tries = .sacha_spatial_config$http_max_tries
+        )
+        page_data <- page$data %spatial||% data.frame()
+        if (nrow(page_data)) {
+          pages[[length(pages) + 1L]] <- page_data
+          retrieved <- retrieved + nrow(page_data)
+        }
+        total <- suppressWarnings(as.integer(page$meta$count)[1L])
+        if (!nrow(page_data) || nrow(page_data) < page_size ||
+            (!is.na(total) && start + nrow(page_data) >= total)) break
+        start <- start + nrow(page_data)
+      }
+    }
+  }
+  if (!length(pages)) return(list(data = data.frame()))
+  columns <- unique(unlist(lapply(pages, names), use.names = FALSE))
+  pages <- lapply(pages, function(page_data) {
+    missing_columns <- setdiff(columns, names(page_data))
+    for (column in missing_columns) page_data[[column]] <- NA
+    page_data[, columns, drop = FALSE]
+  })
+  list(data = do.call(rbind, pages))
+}
+
+.sacha_spatial_gbif_occurrences <- function(species, limit = NULL, date = NULL,
+                                            dataset_keys = NULL, taxon = NULL,
+                                            crop_data = NULL) {
   .sacha_spatial_require("rgbif")
   if (utils::packageVersion("rgbif") < "3.9.0") {
     stop("`rgbif` >= 3.9.0 is required so that the taxonomy used for GBIF occurrence searches (COL Extended Release) is explicit and reproducible.",
@@ -81,9 +301,14 @@
   }
   species <- .sacha_spatial_validate_species(species)
   if (!is.null(limit)) limit <- .sacha_spatial_validate_limit(limit)
+  date <- .sacha_spatial_validate_date(date)
+  spatial_query <- .sacha_spatial_gbif_crop_query(crop_data)
+  has_spatial_query <- !is.null(spatial_query$country) ||
+    !is.null(spatial_query$geometry)
   key <- .sacha_spatial_cache_key(species)
-  cached <- .sacha_spatial_cache_get(key)
-  taxon <- .sacha_spatial_gbif_taxon(species)
+  cacheable <- is.null(date) && !has_spatial_query
+  cached <- if (cacheable) .sacha_spatial_cache_get(key) else NULL
+  taxon <- taxon %spatial||% .sacha_spatial_gbif_taxon(species)
   if (!identical(taxon$status, "ok")) {
     return(list(
       occurrences = data.frame(), requested_limit = limit %spatial||% Inf,
@@ -91,8 +316,18 @@
       error_type = taxon$error_type, taxon = taxon
     ))
   }
+  if (!is.null(date) && is.null(dataset_keys)) {
+    dataset_keys <- .sacha_spatial_gbif_dataset_keys(date)
+  }
+  if (!is.null(date) && !length(dataset_keys)) {
+    return(list(
+      occurrences = data.frame(), requested_limit = limit %spatial||% Inf,
+      status = "empty", message = NULL, fetched_at = Sys.time(), taxon = taxon,
+      date = date, dataset_keys = character(), spatial_query = spatial_query
+    ))
+  }
 
-  if (!is.null(limit) && !is.null(cached) && !is.null(cached$gbif) &&
+  if (cacheable && !is.null(limit) && !is.null(cached) && !is.null(cached$gbif) &&
       cached$gbif$requested_limit >= limit &&
       identical(cached$gbif$status, "ok") &&
       !is.null(cached$gbif$taxon$key) &&
@@ -105,7 +340,13 @@
   cached <- cached %spatial||% list(species = species)
 
   response <- tryCatch({
-    if (!is.null(limit)) {
+    if (has_spatial_query) {
+      .sacha_spatial_gbif_filtered_search(
+        taxon, limit, dataset_keys, spatial_query, crop_data
+      )
+    } else if (!is.null(date)) {
+      .sacha_spatial_gbif_occurrence_search_by_datasets(taxon, dataset_keys, limit)
+    } else if (!is.null(limit)) {
       .sacha_spatial_with_retry(
         function() rgbif::occ_search(
           taxonKey = taxon$key, checklistKey = taxon$checklist_key,
@@ -155,7 +396,7 @@
     result <- list(occurrences = data.frame(), requested_limit = limit %spatial||% Inf,
                    status = "error", message = message, fetched_at = Sys.time(),
                    error_type = "communication", taxon = taxon)
-    if (!is.null(limit)) {
+    if (cacheable && !is.null(limit)) {
       cached$gbif <- result
       .sacha_spatial_cache_set(key, cached)
     }
@@ -183,17 +424,159 @@
     status = if (nrow(occurrences)) "ok" else "empty",
     message = NULL,
     fetched_at = Sys.time(),
-    taxon = taxon
+    taxon = taxon, date = date, dataset_keys = dataset_keys,
+    spatial_query = if (has_spatial_query) spatial_query else NULL
   )
-  if (!is.null(limit)) {
+  if (cacheable && !is.null(limit)) {
     cached$gbif <- result
     .sacha_spatial_cache_set(key, cached)
   }
   result
 }
 
+.sacha_spatial_gbif_occurrence_download <- function(taxon, date = NULL,
+                                                  dataset_keys = NULL,
+                                                  crop_data = NULL) {
+  .sacha_spatial_require("rgbif")
+  date <- .sacha_spatial_validate_date(date)
+  spatial_query <- .sacha_spatial_gbif_crop_query(crop_data)
+  if (!is.null(date) && is.null(dataset_keys)) {
+    dataset_keys <- .sacha_spatial_gbif_dataset_keys(date)
+  }
+  if (!is.null(date) && !length(dataset_keys)) {
+    return(list(
+      occurrences = data.frame(), status = "empty", taxon = taxon,
+      download = NULL, date = date, dataset_keys = character(),
+      fetched_at = Sys.time(), spatial_query = spatial_query
+    ))
+  }
+  if (utils::packageVersion("rgbif") < "3.9.0") {
+    stop("`rgbif` >= 3.9.0 is required to create GBIF downloads with COL Extended Release taxonomy.",
+         call. = FALSE)
+  }
+  predicates <- list(
+    rgbif::pred("taxonKey", taxon$key),
+    rgbif::pred("hasCoordinate", TRUE)
+  )
+  if (!is.null(spatial_query$country)) {
+    predicates[[length(predicates) + 1L]] <- rgbif::pred("country", spatial_query$country)
+  }
+  if (!is.null(spatial_query$geometry)) {
+    predicates[[length(predicates) + 1L]] <- rgbif::pred_within(spatial_query$geometry)
+  }
+  if (!is.null(date)) {
+    predicates[[length(predicates) + 1L]] <- rgbif::pred_in("datasetKey", dataset_keys)
+  }
+  request <- tryCatch(
+    do.call(
+      rgbif::occ_download,
+      c(predicates, list(format = "SIMPLE_CSV", checklistKey = taxon$checklist_key))
+    ),
+    error = function(e) e
+  )
+  if (inherits(request, "error") || inherits(request, "condition")) {
+    stop(
+      sprintf(
+        .sacha_spatial_label("gbif_download_auth_error"),
+        conditionMessage(request)
+      ),
+      call. = FALSE
+    )
+  }
+
+  download_meta <- tryCatch(
+    rgbif::occ_download_wait(request, quiet = TRUE),
+    error = function(e) e
+  )
+  if (inherits(download_meta, "error") || inherits(download_meta, "condition")) {
+    stop(sprintf("Could not complete the GBIF occurrence download: %s",
+                 conditionMessage(download_meta)), call. = FALSE)
+  }
+  status <- if (!is.null(download_meta$status)) {
+    toupper(as.character(download_meta$status)[1L])
+  } else {
+    NA_character_
+  }
+  if (!identical(status, "SUCCEEDED")) {
+    stop(sprintf("The GBIF occurrence download did not succeed (status: %s).",
+                 status %spatial||% "unavailable"), call. = FALSE)
+  }
+  download_key <- if (!is.null(download_meta$key)) {
+    as.character(download_meta$key)[1L]
+  } else {
+    as.character(request)[1L]
+  }
+  doi_value <- download_meta$doi %spatial||% attr(request, "doi")
+  doi <- if (!is.null(doi_value)) as.character(doi_value)[1L] else NA_character_
+  doi <- sub("^https?://(dx\\.)?doi\\.org/", "", doi, ignore.case = TRUE)
+  if (is.na(download_key) || !nzchar(download_key) || is.na(doi) || !nzchar(doi)) {
+    stop("GBIF completed the occurrence download but did not return its download key and DOI.",
+         call. = FALSE)
+  }
+
+  download_dir <- tempfile("sacha-gbif-download-")
+  dir.create(download_dir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(download_dir, recursive = TRUE, force = TRUE), add = TRUE)
+  download_file <- tryCatch(
+    suppressMessages(rgbif::occ_download_get(
+      key = download_key, path = download_dir, overwrite = TRUE
+    )),
+    error = function(e) e
+  )
+  if (inherits(download_file, "error") || inherits(download_file, "condition")) {
+    stop(sprintf("Could not retrieve GBIF download '%s': %s.", download_key,
+                 conditionMessage(download_file)), call. = FALSE)
+  }
+  occurrences <- tryCatch(
+    rgbif::occ_download_import(download_file, path = download_dir),
+    error = function(e) e
+  )
+  if (inherits(occurrences, "error") || inherits(occurrences, "condition")) {
+    stop(sprintf("Could not import GBIF download '%s': %s.", download_key,
+                 conditionMessage(occurrences)), call. = FALSE)
+  }
+  occurrences <- as.data.frame(occurrences)
+  required <- c("decimalLongitude", "decimalLatitude", "scientificName", "year",
+                "stateProvince", "recordedBy")
+  for (column in required) if (!(column %in% names(occurrences))) occurrences[[column]] <- NA
+  occurrences$decimalLongitude <- suppressWarnings(as.numeric(occurrences$decimalLongitude))
+  occurrences$decimalLatitude <- suppressWarnings(as.numeric(occurrences$decimalLatitude))
+  occurrences <- occurrences[
+    !is.na(occurrences$decimalLongitude) & !is.na(occurrences$decimalLatitude) &
+      occurrences$decimalLongitude >= -180 & occurrences$decimalLongitude <= 180 &
+      occurrences$decimalLatitude >= -90 & occurrences$decimalLatitude <= 90,
+    , drop = FALSE
+  ]
+  rownames(occurrences) <- NULL
+
+  list(
+    occurrences = occurrences,
+    status = if (nrow(occurrences)) "ok" else "empty",
+    taxon = taxon,
+    download = list(
+      key = download_key,
+      doi = doi,
+      doi_url = paste0("https://doi.org/", doi),
+      page_url = paste0("https://www.gbif.org/occurrence/download/", download_key),
+      format = "SIMPLE_CSV",
+      status = status,
+      created = if (!is.null(download_meta$created)) {
+        as.character(download_meta$created)[1L]
+      } else {
+        NULL
+      },
+      record_count = nrow(occurrences),
+      created_date_filter = date,
+      dataset_key_count = if (is.null(date)) NULL else length(dataset_keys)
+    ),
+    fetched_at = Sys.time(), date = date, dataset_keys = dataset_keys,
+    spatial_query = if (!is.null(spatial_query$country) ||
+                        !is.null(spatial_query$geometry)) spatial_query else NULL
+  )
+}
+
 .sacha_spatial_source <- function(source) {
-  match.arg(source, c("gbif", "local"))
+  match.arg(source, c("web", "local"))
 }
 
 .sacha_spatial_local_export <- function(local_export) {
@@ -202,10 +585,6 @@
 
 .sacha_spatial_path_component <- function(x) {
   .sacha_path_component(x)
-}
-
-.sacha_spatial_exports_root <- function(directory) {
-  .sacha_exports_root(directory)
 }
 
 .sacha_spatial_taxon_directory <- function(species, occurrences, directory) {
@@ -223,30 +602,49 @@
 }
 
 .sacha_spatial_metadata <- function(species, occurrences, crop = NULL, parent = NULL,
-                                    taxon = NULL) {
+                                    taxon = NULL, download = NULL, date = NULL,
+                                    dataset_keys = NULL, spatial_query = NULL) {
   species <- .sacha_spatial_validate_species(species)
   metadata <- list(
-    schema_version = 2L,
-    source = "GBIF occurrence search API",
-    source_url = "https://api.gbif.org/v1/occurrence/search",
+    schema_version = 4L,
+    source = if (is.null(download)) "GBIF occurrence search API" else "GBIF occurrence download",
+    source_url = if (is.null(download)) {
+      "https://api.gbif.org/v1/occurrence/search"
+    } else {
+      download$page_url
+    },
     species = species,
+    taxonomic_reference = list(
+      name = "Catalogue of Life (COL) Extended Release",
+      checklistKey = .sacha_spatial_gbif_checklist_key()
+    ),
     query = list(
       scientificName = species,
       checklistKey = .sacha_spatial_gbif_checklist_key(),
       taxonKey = if (is.null(taxon)) NULL else taxon$key,
       nameMatch = if (is.null(taxon)) NULL else list(
         inputName = taxon$input_name,
+        inputTaxonId = taxon$input_taxon_id,
         acceptedName = taxon$accepted_name,
         matchType = taxon$match_type,
         rank = taxon$rank
       ),
       hasCoordinate = TRUE,
-      geometry = if (is.null(crop)) NULL else crop$place
+      country = spatial_query$country %spatial||% NULL,
+      geometry = spatial_query$geometry %spatial||% NULL,
+      geometryIsBoundingBox = if (is.null(spatial_query)) NULL else
+        isTRUE(spatial_query$geometry_is_bbox)
     ),
     retrieved_at = format(Sys.time(), tz = "", usetz = TRUE),
     coordinate_reference_system = "EPSG:4326",
     record_count = nrow(occurrences),
     columns = names(occurrences),
+    gbif_download = download,
+    dataset_filter = if (is.null(date)) NULL else list(
+      createdDate = date,
+      datasetCount = length(dataset_keys),
+      datasetKeys = dataset_keys
+    ),
     crop = crop
   )
   if (!is.null(parent)) {
@@ -257,12 +655,29 @@
     metadata$query$taxonKey <- parent$query$taxonKey %spatial||% metadata$query$taxonKey
     metadata$query$nameMatch <- parent$query$nameMatch %spatial||% metadata$query$nameMatch
     metadata$retrieved_at <- parent$retrieved_at %spatial||% metadata$retrieved_at
+    metadata$taxonomic_reference <- parent$taxonomic_reference %spatial||%
+      metadata$taxonomic_reference
+    metadata$gbif_download <- parent$gbif_download %spatial||% metadata$gbif_download
+    metadata$dataset_filter <- parent$dataset_filter %spatial||% metadata$dataset_filter
     metadata$derived_from <- list(
       file = "occurrences.gpkg",
       record_count = parent$record_count,
       retrieved_at = parent$retrieved_at
     )
+    if (!is.null(parent$local_coverage)) {
+      metadata$derived_from$local_coverage <- parent$local_coverage
+    }
     metadata$processed_at <- format(Sys.time(), tz = "", usetz = TRUE)
+  }
+  if (!is.null(download) &&
+      (!is.null(crop) || !identical(as.integer(download$record_count), as.integer(nrow(occurrences))))) {
+    metadata$derived_from <- list(
+      download_key = download$key,
+      doi = download$doi,
+      record_count = download$record_count,
+      saved_record_count = nrow(occurrences),
+      crop = crop
+    )
   }
   metadata
 }
@@ -271,7 +686,10 @@
                                                   overwrite, crop = NULL,
                                                   boundary = NULL,
                                                   taxon_directory = NULL,
-                                                  parent = NULL, taxon = NULL) {
+                                                  parent = NULL, taxon = NULL,
+                                                  download = NULL, date = NULL,
+                                                  dataset_keys = NULL,
+                                                  spatial_query = NULL) {
   .sacha_spatial_require(c("sf", "jsonlite"))
   if (is.null(taxon_directory)) {
     taxon_directory <- .sacha_spatial_taxon_directory(species, occurrences, directory)
@@ -297,7 +715,10 @@
     append = FALSE, delete_dsn = file.exists(data_path)
   )
   jsonlite::write_json(
-    .sacha_spatial_metadata(species, occurrences, crop, parent, taxon), metadata_path,
+    .sacha_spatial_metadata(
+      species, occurrences, crop, parent, taxon, download, date,
+      dataset_keys, spatial_query
+    ), metadata_path,
     auto_unbox = TRUE, pretty = TRUE, null = "null"
   )
   paths <- c(occurrences = data_path, metadata = metadata_path)
@@ -312,9 +733,19 @@
   paths
 }
 
-.sacha_spatial_local_taxon_directories <- function(species, directory) {
+.sacha_spatial_local_taxon_directories <- function(species = NULL, directory,
+                                                  taxon_id = NULL) {
   .sacha_spatial_require("jsonlite")
-  species <- .sacha_spatial_validate_species(species)
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  species <- input$species
+  taxon_id <- input$taxon_id
+  matches_taxon <- function(metadata) {
+    if (is.null(metadata)) return(FALSE)
+    if (!is.null(taxon_id)) {
+      return(identical(as.character(metadata$query$taxonKey %spatial||% ""), taxon_id))
+    }
+    identical(metadata$species, species)
+  }
   locate <- function(root) {
     candidates <- list.dirs(root, recursive = FALSE, full.names = TRUE)
     if (length(candidates) == 0L) return(character())
@@ -326,7 +757,7 @@
       } else {
         NULL
       }
-      if (identical(metadata$species, species)) return(TRUE)
+      if (matches_taxon(metadata)) return(TRUE)
       crop_directories <- list.dirs(candidate, recursive = FALSE, full.names = TRUE)
       crop_metadata <- file.path(crop_directories, "metadata.json")
       crop_metadata <- crop_metadata[
@@ -337,30 +768,270 @@
         candidate_metadata <- tryCatch(
           jsonlite::read_json(path, simplifyVector = FALSE), error = function(e) NULL
         )
-        identical(candidate_metadata$species, species) &&
+        matches_taxon(candidate_metadata) &&
           !is.null(candidate_metadata$crop)
       }, logical(1)))
     }, logical(1))
     candidates[matches]
   }
-  matches <- locate(.sacha_spatial_exports_root(directory))
-  if (length(matches) > 0L) return(matches)
-  locate(file.path(normalizePath(directory, winslash = "/", mustWork = FALSE), "spatial_exports"))
+  locate(.sacha_exports_root(directory))
 }
 
-.sacha_spatial_load_local_occurrences <- function(species, directory, crop_place = NULL,
-                                                  crop_only = FALSE) {
-  taxon_directories <- .sacha_spatial_local_taxon_directories(species, directory)
+.sacha_spatial_local_export_entries <- function(species = NULL, directory,
+                                                taxon_id = NULL, date = NULL) {
+  .sacha_spatial_require("jsonlite")
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  species <- input$species
+  taxon_id <- input$taxon_id
+  root <- .sacha_exports_root(directory)
+  if (!dir.exists(root)) return(list())
+  data_paths <- list.files(
+    root, pattern = "^occurrences\\.gpkg$", recursive = TRUE,
+    full.names = TRUE, include.dirs = FALSE
+  )
+  entries <- lapply(data_paths, function(data_path) {
+    metadata_path <- file.path(dirname(data_path), "metadata.json")
+    if (!file.exists(metadata_path)) return(NULL)
+    metadata <- tryCatch(
+      jsonlite::read_json(metadata_path, simplifyVector = FALSE),
+      error = function(e) NULL
+    )
+    if (is.null(metadata)) return(NULL)
+    metadata_species <- .sacha_spatial_scalar(metadata$species)
+    metadata_taxon_id <- .sacha_spatial_scalar(metadata$query$taxonKey)
+    if (!is.null(taxon_id)) {
+      if (is.na(metadata_taxon_id) || !identical(metadata_taxon_id, taxon_id)) {
+        return(NULL)
+      }
+    } else if (is.na(metadata_species) || !identical(metadata_species, species)) {
+      return(NULL)
+    }
+    checklist_key <- .sacha_spatial_scalar(
+      metadata$taxonomic_reference$checklistKey
+    )
+    if (!is.na(checklist_key) &&
+        !identical(checklist_key, .sacha_spatial_gbif_checklist_key())) {
+      return(NULL)
+    }
+    if (!is.null(date)) {
+      dataset_filter <- metadata$dataset_filter %spatial||% NULL
+      if (is.null(dataset_filter) ||
+          !identical(.sacha_spatial_scalar(dataset_filter$createdDate), date) ||
+          !length(unlist(dataset_filter$datasetKeys, use.names = FALSE))) {
+        return(NULL)
+      }
+    }
+    list(
+      data_path = data_path,
+      metadata_path = metadata_path,
+      metadata = metadata
+    )
+  })
+  Filter(Negate(is.null), entries)
+}
+
+.sacha_spatial_read_local_occurrence_export <- function(data_path,
+                                                        metadata_path = NULL,
+                                                        metadata = NULL) {
+  .sacha_spatial_require(c("sf", "jsonlite"))
+  if (is.null(metadata_path)) metadata_path <- file.path(dirname(data_path), "metadata.json")
+  occurrences <- tryCatch(sf::st_read(data_path, quiet = TRUE), error = function(e) {
+    stop(sprintf("Could not read local occurrences from '%s': %s.",
+                 data_path, conditionMessage(e)), call. = FALSE)
+  })
+  if (is.null(metadata)) {
+    metadata <- tryCatch(
+      jsonlite::read_json(metadata_path, simplifyVector = FALSE),
+      error = function(e) {
+        stop(sprintf("Could not read local metadata from '%s': %s.",
+                     metadata_path, conditionMessage(e)), call. = FALSE)
+      }
+    )
+  }
+  required <- c("decimalLongitude", "decimalLatitude", "scientificName", "year", "stateProvince")
+  if (!is.data.frame(occurrences) || !all(required %in% names(occurrences))) {
+    stop(sprintf("Local occurrence export in '%s' is not compatible with the map functions.",
+                 dirname(data_path)), call. = FALSE)
+  }
+  occurrences <- as.data.frame(sf::st_drop_geometry(occurrences))
+  if (!("recordedBy" %in% names(occurrences))) occurrences$recordedBy <- NA_character_
+  list(occurrences = occurrences, metadata = metadata)
+}
+
+.sacha_spatial_local_occurrence_key <- function(occurrences) {
+  keys <- rep(NA_character_, nrow(occurrences))
+  if ("gbifID" %in% names(occurrences)) {
+    gbif_id <- trimws(as.character(occurrences$gbifID))
+    has_gbif_id <- !is.na(gbif_id) & nzchar(gbif_id)
+    keys[has_gbif_id] <- paste0("gbif:", gbif_id[has_gbif_id])
+  }
+  if (all(c("occurrenceID", "datasetKey") %in% names(occurrences))) {
+    occurrence_id <- trimws(as.character(occurrences$occurrenceID))
+    dataset_key <- trimws(as.character(occurrences$datasetKey))
+    use_occurrence_id <- is.na(keys) & !is.na(occurrence_id) &
+      nzchar(occurrence_id) & !is.na(dataset_key) & nzchar(dataset_key)
+    keys[use_occurrence_id] <- paste0(
+      "occurrence:", dataset_key[use_occurrence_id], ":",
+      occurrence_id[use_occurrence_id]
+    )
+  }
+  keys
+}
+
+.sacha_spatial_load_local_available_occurrences <- function(species = NULL,
+                                                            directory,
+                                                            taxon_id = NULL,
+                                                            date = NULL) {
+  entries <- .sacha_spatial_local_export_entries(
+    species, directory, taxon_id, date
+  )
+  taxon_label <- species %spatial||% sprintf("taxon_id %s", taxon_id)
+  if (!length(entries)) {
+    stop(sprintf("No local occurrence export was found for '%s' in '%s'. Create it first with `gbif_save_occurrences()`.",
+                 taxon_label, .sacha_exports_root(directory)),
+         call. = FALSE)
+  }
+  is_crop <- vapply(entries, function(entry) !is.null(entry$metadata$crop), logical(1))
+  complete_entries <- entries[!is_crop]
+  if (length(complete_entries)) {
+    retrieved <- vapply(complete_entries, function(entry) {
+      value <- .sacha_spatial_scalar(entry$metadata$retrieved_at)
+      timestamp <- if (is.na(value)) NA_real_ else {
+        suppressWarnings(as.numeric(as.POSIXct(value, tz = "UTC")))
+      }
+      file_time <- as.numeric(file.info(entry$data_path)$mtime)
+      if (is.finite(timestamp)) timestamp else file_time
+    }, numeric(1))
+    if (all(!is.finite(retrieved))) retrieved <- seq_along(complete_entries)
+    retrieved[!is.finite(retrieved)] <- -Inf
+    selected <- complete_entries[[which.max(retrieved)]]
+    loaded <- .sacha_spatial_read_local_occurrence_export(
+      selected$data_path, selected$metadata_path, selected$metadata
+    )
+    if (is.null(species)) {
+      species <- .sacha_spatial_validate_species(loaded$metadata$species)
+    }
+    loaded$metadata$local_coverage <- list(
+      type = "full_extent_export",
+      export_count = 1L,
+      record_count = nrow(loaded$occurrences)
+    )
+    return(c(
+      loaded,
+      list(directory = dirname(selected$data_path),
+           coverage = loaded$metadata$local_coverage)
+    ))
+  }
+
+  taxon_keys <- unique(Filter(Negate(is.na), lapply(entries, function(entry) {
+    .sacha_spatial_scalar(entry$metadata$query$taxonKey, default = NA_character_)
+  })))
+  if (length(taxon_keys) > 1L) {
+    stop(sprintf(
+      "Local cropped exports for '%s' resolve to different COL XR taxon keys and cannot be combined.",
+      taxon_label
+    ), call. = FALSE)
+  }
+  loaded <- lapply(entries, function(entry) {
+    .sacha_spatial_read_local_occurrence_export(
+      entry$data_path, entry$metadata_path, entry$metadata
+    )
+  })
+  if (!is.null(date)) {
+    loaded <- lapply(loaded, function(export) {
+      export$occurrences <- .sacha_spatial_filter_local_dataset_date(
+        export$occurrences, export$metadata, date
+      )
+      export
+    })
+  }
+  columns <- unique(unlist(lapply(loaded, function(export) {
+    names(export$occurrences)
+  }), use.names = FALSE))
+  data <- lapply(loaded, function(export) {
+    occurrences <- export$occurrences
+    missing_columns <- setdiff(columns, names(occurrences))
+    for (column in missing_columns) occurrences[[column]] <- NA
+    occurrences[, columns, drop = FALSE]
+  })
+  occurrences <- do.call(rbind, data)
+  record_count_before_deduplication <- nrow(occurrences)
+  record_keys <- .sacha_spatial_local_occurrence_key(occurrences)
+  duplicated_records <- !is.na(record_keys) & duplicated(record_keys)
+  occurrences <- occurrences[!duplicated_records, , drop = FALSE]
+  rownames(occurrences) <- NULL
+  metadata <- loaded[[1L]]$metadata
+  retrieved_at_values <- vapply(loaded, function(export) {
+    .sacha_spatial_scalar(export$metadata$retrieved_at)
+  }, character(1))
+  retrieved_days <- vapply(retrieved_at_values, function(value) {
+    retrieved_date <- .sacha_spatial_map_style_retrieval_date(value)
+    if (is.na(retrieved_date)) NA_real_ else as.numeric(retrieved_date)
+  }, numeric(1))
+  caption_retrieved_at <- if (any(is.finite(retrieved_days))) {
+    retrieved_at_values[[which.max(retrieved_days)]]
+  } else {
+    NULL
+  }
+  metadata$record_count <- nrow(occurrences)
+  metadata$local_coverage <- list(
+    type = if (length(loaded) == 1L) {
+      "single_cropped_export"
+    } else {
+      "union_of_cropped_exports"
+    },
+    export_count = length(loaded),
+    record_count_before_deduplication = record_count_before_deduplication,
+    deduplicated_record_count = nrow(occurrences),
+    source_exports = vapply(entries, function(entry) entry$data_path, character(1))
+  )
+  if (!is.null(date)) {
+    dataset_keys <- unique(unlist(lapply(loaded, function(export) {
+      export$metadata$dataset_filter$datasetKeys
+    }), use.names = FALSE))
+    metadata$dataset_filter <- list(
+      createdDate = date,
+      datasetCount = length(dataset_keys),
+      datasetKeys = dataset_keys
+    )
+  }
+  list(
+    occurrences = occurrences,
+    metadata = metadata,
+    directory = dirname(entries[[1L]]$data_path),
+    coverage = metadata$local_coverage,
+    caption_retrieved_at = caption_retrieved_at
+  )
+}
+
+.sacha_spatial_load_local_occurrences <- function(species = NULL, directory,
+                                                  crop_place = NULL,
+                                                  crop_only = FALSE,
+                                                  taxon_id = NULL,
+                                                  prefer_available = FALSE,
+                                                  date = NULL) {
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  species <- input$species
+  taxon_id <- input$taxon_id
+  if (isTRUE(prefer_available)) {
+    return(.sacha_spatial_load_local_available_occurrences(
+      species, directory, taxon_id, date
+    ))
+  }
+  taxon_directories <- .sacha_spatial_local_taxon_directories(
+    species, directory, taxon_id
+  )
+  taxon_label <- species %spatial||% sprintf("taxon_id %s", taxon_id)
   if (length(taxon_directories) != 1L) {
     stop(sprintf("Could not identify one local occurrence export for '%s' in '%s'.",
-                 species, .sacha_spatial_exports_root(directory)), call. = FALSE)
+                 taxon_label, .sacha_exports_root(directory)), call. = FALSE)
   }
   target <- taxon_directories
   if (isTRUE(crop_only) && is.null(crop_place)) {
     crop_directories <- list.dirs(target, recursive = FALSE, full.names = TRUE)
     crop_directories <- crop_directories[file.exists(file.path(crop_directories, "occurrences.gpkg"))]
     if (length(crop_directories) != 1L) {
-      stop(sprintf("Specify `kml` to identify one local cropped export for '%s'.", species),
+      stop(sprintf("Specify `crop_vector`, `crop_area`, or `crop_box` to identify one local cropped export for '%s'.", taxon_label),
            call. = FALSE)
     }
     target <- crop_directories
@@ -372,7 +1043,7 @@
   metadata_path <- file.path(target, "metadata.json")
   if (!file.exists(data_path) || !file.exists(metadata_path)) {
     stop(sprintf("No local occurrence export was found for '%s' in '%s'. Create it first with `gbif_save_occurrences()`.",
-                 species, target),
+                 taxon_label, target),
          call. = FALSE)
   }
   occurrences <- tryCatch(sf::st_read(data_path, quiet = TRUE), error = function(e) {
@@ -390,6 +1061,7 @@
   }
   occurrences <- as.data.frame(sf::st_drop_geometry(occurrences))
   if (!("recordedBy" %in% names(occurrences))) occurrences$recordedBy <- NA_character_
+  if (is.null(species)) species <- .sacha_spatial_validate_species(metadata$species)
   list(occurrences = occurrences, metadata = metadata, directory = target)
 }
 
@@ -467,8 +1139,9 @@
       region = sf::st_sf(geometry = window),
       bbox = sf::st_bbox(window),
       place = crop_box$label %spatial||% .sacha_spatial_crop_box_label(extent),
-      kml = NULL,
+      crop_vector = NULL,
       crop_area = NULL,
+      country_code = NULL,
       crop_box = box_record,
       window = extent
     ))
@@ -484,7 +1157,7 @@
   }
   clipped <- clipped[!sf::st_is_empty(clipped)]
   if (!length(clipped)) {
-    stop("`crop_box` does not overlap the geographic boundary defined by `kml` or `crop_area`.",
+    stop("`crop_box` does not overlap the geographic boundary defined by `crop_vector` or `crop_area`.",
          call. = FALSE)
   }
   clipped <- sf::st_sf(geometry = sf::st_set_crs(clipped, 4326))
@@ -519,6 +1192,202 @@
   occurrences[inside, , drop = FALSE]
 }
 
+.sacha_spatial_gbif_orient_ring <- function(ring, counterclockwise) {
+  coordinates <- as.matrix(ring)
+  if (nrow(coordinates) < 4L || ncol(coordinates) < 2L) return(coordinates)
+  xy <- coordinates[, 1:2, drop = FALSE]
+  signed_area <- sum(
+    xy[-nrow(xy), 1L] * xy[-1L, 2L] -
+      xy[-1L, 1L] * xy[-nrow(xy), 2L]
+  )
+  if (is.finite(signed_area) && signed_area != 0 &&
+      ((signed_area > 0) != isTRUE(counterclockwise))) {
+    coordinates <- coordinates[nrow(coordinates):1L, , drop = FALSE]
+  }
+  coordinates
+}
+
+.sacha_spatial_gbif_orient_polygon <- function(rings) {
+  lapply(seq_along(rings), function(index) {
+    .sacha_spatial_gbif_orient_ring(rings[[index]], counterclockwise = index == 1L)
+  })
+}
+
+.sacha_spatial_gbif_orient_geometry <- function(geometry) {
+  geometry_class <- class(geometry)
+  if ("POLYGON" %in% geometry_class) {
+    return(structure(
+      .sacha_spatial_gbif_orient_polygon(unclass(geometry)),
+      class = geometry_class
+    ))
+  }
+  if ("MULTIPOLYGON" %in% geometry_class) {
+    polygons <- lapply(unclass(geometry), .sacha_spatial_gbif_orient_polygon)
+    return(structure(polygons, class = geometry_class))
+  }
+  if ("GEOMETRYCOLLECTION" %in% geometry_class) {
+    geometries <- lapply(unclass(geometry), .sacha_spatial_gbif_orient_geometry)
+    return(structure(geometries, class = geometry_class))
+  }
+  geometry
+}
+
+.sacha_spatial_gbif_bbox_polygon <- function(geometry) {
+  extent <- sf::st_bbox(geometry)
+  values <- as.numeric(extent)
+  names(values) <- names(extent)
+  epsilon <- 1e-6
+  if (values[["xmin"]] >= values[["xmax"]]) {
+    values[["xmin"]] <- max(-180, values[["xmin"]] - epsilon)
+    values[["xmax"]] <- min(180, values[["xmax"]] + epsilon)
+  }
+  if (values[["ymin"]] >= values[["ymax"]]) {
+    values[["ymin"]] <- max(-90, values[["ymin"]] - epsilon)
+    values[["ymax"]] <- min(90, values[["ymax"]] + epsilon)
+  }
+  sf::st_as_sfc(sf::st_bbox(values, crs = sf::st_crs(4326)))
+}
+
+.sacha_spatial_gbif_geometry_wkt <- function(crop_data, max_chars = 8000L) {
+  .sacha_spatial_require("sf")
+  region <- crop_data$region %spatial||% crop_data$boundary
+  if (is.null(region) || !inherits(region, "sf")) return(NULL)
+  geometry <- sf::st_geometry(region)
+  if (is.na(sf::st_crs(geometry))) {
+    sf::st_crs(geometry) <- 4326
+  } else if (!isTRUE(sf::st_crs(geometry) == sf::st_crs(4326))) {
+    geometry <- sf::st_transform(geometry, 4326)
+  }
+  geometry <- sf::st_make_valid(sf::st_union(geometry))
+  geometry_types <- unique(as.character(sf::st_geometry_type(geometry)))
+  exact_polygon <- length(geometry_types) > 0L &&
+    all(geometry_types %in% c("POLYGON", "MULTIPOLYGON"))
+  if (!exact_polygon) {
+    geometry <- .sacha_spatial_gbif_bbox_polygon(geometry)
+  }
+  geometry <- sf::st_sfc(
+    lapply(geometry, .sacha_spatial_gbif_orient_geometry),
+    crs = sf::st_crs(4326)
+  )
+  wkt <- as.character(sf::st_as_text(geometry, digits = 15L)[1L])
+  if (!nzchar(wkt) || is.na(wkt)) return(NULL)
+  is_bbox <- !exact_polygon
+  if (nchar(wkt, type = "bytes") > max_chars) {
+    geometry <- .sacha_spatial_gbif_bbox_polygon(geometry)
+    geometry <- sf::st_sfc(
+      lapply(geometry, .sacha_spatial_gbif_orient_geometry),
+      crs = sf::st_crs(4326)
+    )
+    wkt <- as.character(sf::st_as_text(geometry, digits = 15L)[1L])
+    is_bbox <- TRUE
+  }
+  list(wkt = wkt, is_bbox = is_bbox)
+}
+
+.sacha_spatial_gbif_crop_query <- function(crop_data = NULL) {
+  if (is.null(crop_data)) return(NULL)
+  country <- crop_data$country_code %spatial||% NULL
+  if (!is.null(country) &&
+      (!is.character(country) || length(country) != 1L || is.na(country) ||
+       !grepl("^[A-Z]{2}$", country))) {
+    country <- NULL
+  }
+  geometry <- NULL
+  if (is.null(country) || !is.null(crop_data$window)) {
+    geometry <- .sacha_spatial_gbif_geometry_wkt(crop_data)
+  }
+  list(
+    country = country,
+    geometry = geometry$wkt %spatial||% NULL,
+    geometry_is_bbox = isTRUE(geometry$is_bbox)
+  )
+}
+
+.sacha_spatial_gbif_search_page <- function(taxon, limit, start = 0L,
+                                            dataset_keys = NULL,
+                                            spatial_query = NULL) {
+  arguments <- list(
+    taxonKey = taxon$key,
+    checklistKey = taxon$checklist_key,
+    hasCoordinate = TRUE,
+    limit = limit,
+    start = start
+  )
+  if (!is.null(dataset_keys) && length(dataset_keys)) {
+    arguments$datasetKey <- paste(dataset_keys, collapse = ";")
+  }
+  if (!is.null(spatial_query$country)) arguments$country <- spatial_query$country
+  if (!is.null(spatial_query$geometry)) {
+    arguments$geometry <- spatial_query$geometry
+    arguments$geom_big <- "asis"
+  }
+  .sacha_spatial_with_retry(
+    function() do.call(rgbif::occ_search, arguments),
+    max_tries = .sacha_spatial_config$http_max_tries
+  )
+}
+
+.sacha_spatial_gbif_filtered_search <- function(taxon, limit, dataset_keys,
+                                                spatial_query, crop_data) {
+  dataset_groups <- if (is.null(dataset_keys)) {
+    list(NULL)
+  } else {
+    split(dataset_keys, ceiling(seq_along(dataset_keys) / 50L))
+  }
+  results <- list()
+  selected_count <- 0L
+  for (dataset_group in dataset_groups) {
+    start <- 0L
+    repeat {
+      remaining <- if (is.null(limit)) 300L else limit - selected_count
+      if (remaining <= 0L) break
+      page_size <- min(300L, remaining, 100000L - start)
+      if (page_size <= 0L) break
+      page <- .sacha_spatial_gbif_search_page(
+        taxon, page_size, start, dataset_group, spatial_query
+      )
+      page_data <- page$data %spatial||% data.frame()
+      if (nrow(page_data)) {
+        for (column in c("decimalLongitude", "decimalLatitude")) {
+          if (!(column %in% names(page_data))) page_data[[column]] <- NA_real_
+          page_data[[column]] <- suppressWarnings(as.numeric(page_data[[column]]))
+        }
+        valid <- is.finite(page_data$decimalLongitude) &
+          is.finite(page_data$decimalLatitude) &
+          page_data$decimalLongitude >= -180 & page_data$decimalLongitude <= 180 &
+          page_data$decimalLatitude >= -90 & page_data$decimalLatitude <= 90
+        page_data <- page_data[valid, , drop = FALSE]
+        if (nrow(page_data) && !is.null(crop_data)) {
+          page_data <- .sacha_spatial_filter_crop(page_data, crop_data)
+        }
+        if (nrow(page_data)) {
+          results[[length(results) + 1L]] <- page_data
+          selected_count <- selected_count + nrow(page_data)
+        }
+      }
+      total <- suppressWarnings(as.integer(page$meta$count)[1L])
+      retrieved <- nrow(page$data %spatial||% data.frame())
+      if (!retrieved || retrieved < page_size || start + retrieved >= 100000L ||
+          (!is.na(total) && start + retrieved >= total)) {
+        break
+      }
+      start <- start + retrieved
+    }
+    if (!is.null(limit) && selected_count >= limit) break
+  }
+  if (!length(results)) return(list(data = data.frame()))
+  columns <- unique(unlist(lapply(results, names), use.names = FALSE))
+  results <- lapply(results, function(result) {
+    missing_columns <- setdiff(columns, names(result))
+    for (column in missing_columns) result[[column]] <- NA
+    result[, columns, drop = FALSE]
+  })
+  data <- do.call(rbind, results)
+  if (!is.null(limit)) data <- utils::head(data, limit)
+  rownames(data) <- NULL
+  list(data = data)
+}
+
 .sacha_spatial_map_mode <- function(mode) {
   match.arg(mode, c("interactive", "static"))
 }
@@ -540,11 +1409,13 @@
 .sacha_spatial_export_image <- function(occurrences, species, output_directory,
                                         colour, zoom, dpi, overwrite,
                                         boundary = NULL, bbox = NULL,
-                                        file_prefix = "gbif_map", legend_place = NULL) {
+                                        file_prefix = "gbif_map", legend_place = NULL,
+                                        static_legend_position = "bottomleft") {
   .sacha_spatial_require("ggplot2")
   static_map <- .sacha_spatial_static_map(
     occurrences, colour, zoom, boundary = boundary, bbox = bbox,
-    legend_place = legend_place
+    legend_place = legend_place,
+    static_legend_position = static_legend_position
   )
   export_size <- .sacha_spatial_map_style_export_size(attr(static_map, "sacha_map_frame"))
   dir.create(output_directory, recursive = TRUE, showWarnings = FALSE)
@@ -556,36 +1427,44 @@
   c(image = path)
 }
 
-.sacha_spatial_kml_place_name <- function(kml_path) {
-  name <- tools::file_path_sans_ext(basename(kml_path))
+.sacha_spatial_crop_vector_place_name <- function(crop_vector) {
+  name <- tools::file_path_sans_ext(basename(crop_vector))
   name <- gsub("[_\\-]+", " ", name)
   trimws(name)
 }
 
-.sacha_spatial_kml_boundary <- function(kml_path) {
+.sacha_spatial_crop_vector_boundary <- function(crop_vector) {
   .sacha_spatial_require("sf")
-  if (!is.character(kml_path) || length(kml_path) != 1L || is.na(kml_path) ||
-      !nzchar(trimws(kml_path))) {
-    stop("`kml` must be a single path to a .kml file.", call. = FALSE)
+  if (!is.character(crop_vector) || length(crop_vector) != 1L || is.na(crop_vector) ||
+      !nzchar(trimws(crop_vector))) {
+    stop("`crop_vector` must be one path to a .kml or .shp file.", call. = FALSE)
   }
-  if (!file.exists(kml_path)) {
-    stop(sprintf("`kml` file was not found: %s", kml_path), call. = FALSE)
+  if (!file.exists(crop_vector)) {
+    stop(sprintf("`crop_vector` file was not found: %s", crop_vector), call. = FALSE)
+  }
+  extension <- tolower(tools::file_ext(crop_vector))
+  if (!(extension %in% c("kml", "shp"))) {
+    stop("`crop_vector` must point to a .kml or .shp file.", call. = FALSE)
   }
 
   boundary <- tryCatch(
-    sf::st_read(kml_path, quiet = TRUE),
+    sf::st_read(crop_vector, quiet = TRUE),
     error = function(e) {
-      stop(sprintf("Could not read KML file '%s': %s.", kml_path, conditionMessage(e)),
+      stop(sprintf("Could not read crop vector '%s': %s.", crop_vector, conditionMessage(e)),
            call. = FALSE)
     }
   )
   if (!nrow(boundary)) {
-    stop(sprintf("KML file '%s' does not contain any geometry.", kml_path), call. = FALSE)
+    stop(sprintf("Crop vector '%s' does not contain any geometry.", crop_vector), call. = FALSE)
   }
   if (is.na(sf::st_crs(boundary))) {
-    warning(sprintf(
-      .sacha_spatial_label("warn_kml_no_crs"), kml_path
-    ), call. = FALSE)
+    warning_message <- if (identical(extension, "kml")) {
+      sprintf(.sacha_spatial_label("warn_kml_no_crs"), crop_vector)
+    } else {
+      sprintf("Crop vector '%s' has no coordinate reference system; its coordinates are treated as WGS 84 (EPSG:4326).",
+              crop_vector)
+    }
+    warning(warning_message, call. = FALSE)
     sf::st_crs(boundary) <- 4326
   } else {
     boundary <- sf::st_transform(boundary, 4326)
@@ -595,7 +1474,7 @@
   list(
     boundary = boundary,
     bbox = extent,
-    place = .sacha_spatial_kml_place_name(kml_path)
+    place = .sacha_spatial_crop_vector_place_name(crop_vector)
   )
 }
 
@@ -737,12 +1616,13 @@
                                        fig_height = NULL) {
   report <- .sacha_spatial_map_style_report(
     variant = variant, mode = mode, frame = frame, species = species,
-    language = language, place = place
+    language = language, place = place,
+    retrieved_at = attr(map, "sacha_retrieved_at", exact = TRUE)
   )
-  if (is.null(fig_width)) fig_width <- report$width
-  if (is.null(fig_height)) fig_height <- report$height
-  report$width <- fig_width
-  report$height <- fig_height
+  if (identical(mode, "static")) {
+    if (!is.null(fig_width)) report$width <- fig_width
+    if (!is.null(fig_height)) report$height <- fig_height
+  }
   .sacha_spatial_emit_report_map(map, report)
 }
 
@@ -752,9 +1632,10 @@
 #' species, and `gbif_map_md()` creates the same map for a markdown-formatted
 #' report (Quarto or R Markdown).
 #'
-#' With `source = "gbif"` (default), the supplied binomial is first resolved
-#' by GBIF as an exact, species-level name in the configured checklist (COL
-#' Extended Release by default). The resulting taxon key and the same
+#' With `source = "web"` (default), supply exactly one of `species` or
+#' `taxon_id`. GBIF resolves the binomial as an exact, species-level name or
+#' validates the COL XR usage key as an exact species-level taxon. The
+#' resulting taxon key and the same
 #' checklist key are used to retrieve records with coordinates. This prevents
 #' approximate name matches and keeps records tied to one accepted GBIF
 #' taxonomic concept. With
@@ -763,13 +1644,29 @@
 #' contacted. Local exports are stored under
 #' `sacha_exports/Family_Genus_species` inside `directory`.
 #'
-#' Setting `save_occurrences = TRUE` retrieves every available georeferenced
-#' record (independently of `limit`) and stores it as a GeoPackage in WGS 84
-#' (EPSG:4326) with all GBIF fields, together with a JSON file describing the
-#' exact name match, taxon key, query, retrieval date, coordinate reference
-#' system, and record count. When
-#' `source = "local"`, the records already reside in a saved export and
-#' nothing is written.
+#' Setting `save_occurrences = TRUE` stores up to `limit` georeferenced
+#' records as a GeoPackage in WGS 84 (EPSG:4326), together with a JSON file
+#' describing the exact taxon match, query, date filter, retrieval date,
+#' coordinate reference system, and record count. By default,
+#' `generate_doi = FALSE` uses the fast GBIF occurrence search and does not wait
+#' for a registered download or DOI. Set `generate_doi = TRUE` to create and wait
+#' for a registered download; its DOI is recorded in `metadata.json` and in the
+#' map's `sacha_gbif_download` attribute. This requires `GBIF_USER`,
+#' `GBIF_PWD`, and `GBIF_EMAIL` credentials. With `source = "local"`,
+#' `generate_doi` does not contact GBIF and no new export is written.
+#'
+#' Configure the GBIF account credentials in the current R session with
+#' `Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password",
+#' GBIF_EMAIL = "your_account_email")`. To keep them available in future
+#' sessions, add the same three variables to your personal `~/.Renviron` file
+#' and restart R. Do not share or publish that file.
+#'
+#' The default `limit` of 50,000 is intended to keep routine queries
+#' manageable. For species with larger occurrence sets, such as
+#' `Amaranthus hybridus`, reuse a local export or restrict the records with
+#' `date`. For a spatially filtered retrieval, use [gbif_map_crop()] or
+#' [gbif_save_occurrences()]: country areas and geometric boundaries are sent
+#' to GBIF before records are returned.
 #'
 #' Interactive maps show the scientific name, year, locality, and observer
 #' (`recordedBy`) reported by GBIF for each occurrence. Missing values are
@@ -784,6 +1681,18 @@
 #' distinct from the error raised when GBIF responds successfully but holds no
 #' georeferenced records for the species.
 #'
+#' `date` selects occurrence datasets by their GBIF registry creation date
+#' (`createdDate`) and then filters records to those datasets; it is not the
+#' date when an individual occurrence was observed. This registry lookup is
+#' separate from the occurrence search. GBIF uses the Catalogue of Life
+#' Extended Release (COL XR) as the taxonomic reference for occurrence
+#' downloads. When `generate_doi = TRUE`, the export's `metadata.json` records
+#' its official download DOI and link. By downloading the data, you acknowledge GBIF's
+#' [data-use agreement](https://www.gbif.org/terms/data-user). When citing or
+#' referring to registered downloads (`generate_doi = TRUE`), follow GBIF's
+#' [citation guidelines](https://www.gbif.org/citation-guidelines#occDataDownload)
+#' and include the DOI assigned to that specific download in every publication.
+#'
 #' In Markdown reports, `gbif_map_md()` assigns a stable Quarto figure ID from
 #' the map type and species name. For `"Bidens andicola"`, the full-extent map
 #' is `fig-gbif-map-bidens_andicola`. Use that ID in a cross-reference
@@ -795,18 +1704,24 @@
 #' @param species A binomial scientific name in the form `"Genus species"`,
 #'   e.g. `"Bidens andicola"`, `"Cinchona officinalis"`, or `"Puma
 #'   concolor"`. GBIF must resolve it as an exact species-level name; spelling
-#'   variants and higher-rank matches are rejected.
-#' @param limit Maximum number of georeferenced occurrences used to draw the
-#'   map, an integer between `1` and `100000`, e.g. `100`, `500`, or `2000`.
+#'   variants and higher-rank matches are rejected. Supply exactly one of
+#'   `species` or `taxon_id`.
+#' @param taxon_id A COL XR alphanumeric species usage key, such as `"Q2M4"`.
+#'   GBIF resolves the key against the configured checklist and verifies that
+#'   it identifies one species-level taxon. Supply exactly one of `taxon_id`
+#'   or `species`.
+#' @param limit Maximum number of georeferenced occurrences used to draw and
+#'   save, an integer between `1` and `100000`, e.g. `100`, `500`, or `2000`.
 #'   With a local source, the first `limit` records of the saved export are
-#'   used. Defaults to `100000`.
+#'   used. Defaults to `50000`.
 #' @param mode Map type: `"interactive"` (default; a Leaflet widget) or
 #'   `"static"` (a ggplot2 map). In `gbif_map_md()`, `NULL` selects an
 #'   interactive map for HTML output and a static map for other formats.
-#' @param save_occurrences Logical. If `TRUE`, the complete set of
-#'   georeferenced records for the same validated GBIF taxon key is saved as
-#'   `occurrences.gpkg` with its provenance file `metadata.json` under
-#'   `sacha_exports/Family_Genus_species`. Defaults to `FALSE`.
+#' @param save_occurrences Logical. If `TRUE`, up to `limit` georeferenced
+#'   records are saved as `occurrences.gpkg` under
+#'   `sacha_exports/Family_Genus_species`, with `metadata.json` describing the
+#'   query. `generate_doi = TRUE` adds the official DOI for a registered GBIF
+#'   download. Defaults to `FALSE`.
 #' @param export_image Logical. If `TRUE`, the static map is written as a PNG
 #'   file to `sacha_exports/Family_Genus_species`. Defaults to `FALSE`.
 #' @param directory Base directory in which `sacha_exports` is created or,
@@ -815,23 +1730,37 @@
 #' @param colour Colour of the occurrence points as a hexadecimal code with 3,
 #'   4, 6, or 8 digits, e.g. `"#1B9E77"`. When `NULL`, the package default
 #'   colour is used.
+#' @param static_legend_position Position of the static legend as one composed
+#'   unit with its scale bar and north arrow. Applies to static maps and PNGs
+#'   written with `export_image = TRUE`, including when `mode` is
+#'   `"interactive"`: `"bottomleft"` (default), `"bottom"`,
+#'   `"bottomright"`, `"right"`, `"topright"`, `"top"`, `"topleft"`, or
+#'   `"left"`. It does not change the interactive map widget.
 #' @param zoom_static Logical. Should static maps be framed on the extent of
 #'   the occurrences? It applies to static maps and exported images. When
 #'   `NULL`, the package default is used.
 #' @param dpi Resolution of the exported PNG in dots per inch. When `NULL`,
 #'   the package default resolution is used.
-#' @param ppp Spanish-language synonym of `dpi` (puntos por pulgada). If both
-#'   are supplied, `ppp` takes precedence.
 #' @param overwrite Logical. Should existing output files be replaced? If
 #'   `FALSE`, an existing local occurrence export raises an error. Defaults to
 #'   `TRUE`.
-#' @param source Occurrence source: `"gbif"` (default) retrieves records from
+#' @param source Occurrence source: `"web"` (default) retrieves records from
 #'   GBIF; `"local"` reads a saved export from `sacha_exports` under
 #'   `directory`.
-#' @param fig_width,fig_height Figure dimensions in inches for static maps
-#'   produced by `gbif_map_md()`. They do not set the size of interactive
-#'   Leaflet maps. When `NULL`, static-map dimensions follow the map aspect
-#'   ratio.
+#' @param generate_doi Logical. If `TRUE` and `source = "web"`, create and wait
+#'   for a registered GBIF download, retrieve its DOI, and use at most `limit`
+#'   records. This requires GBIF account credentials. If `FALSE` (default),
+#'   use the faster occurrence-search API without waiting for a DOI. For a
+#'   local source, no GBIF request is made.
+#' @param date Optional ISO date or range such as
+#'   `"2020-01-01,2021-01-01"`. It filters GBIF occurrence datasets by their
+#'   registry `createdDate`, then filters records by the matching dataset keys.
+#'   It does not filter the date on which an occurrence was observed. Local
+#'   exports can use only the same date filter recorded in their metadata.
+#' @param fig_width,fig_height Dimensions in inches for static maps produced
+#'   by `gbif_map_md()`. When `NULL`, the static map dimensions follow its
+#'   aspect ratio. Interactive Leaflet maps use the widget and output
+#'   container's default sizing.
 #' @return A Leaflet widget or a ggplot2 object. Paths of the written files
 #'   are stored in the `"sacha_files"` attribute, the plotted records in
 #'   `"sacha_occurrences"`, and the species in `"sacha_species"`.
@@ -839,14 +1768,15 @@
 #' @examples
 #' \donttest{
 #' map <- gbif_map("Bidens andicola", limit = 100)
+#' map_by_key <- gbif_map(taxon_id = "Q2M4", limit = 100)
 #' map
 #' }
 #' \dontrun{
 #' gbif_map("Bidens andicola", save_occurrences = TRUE, export_image = TRUE)
 #' gbif_map("Bidens andicola", source = "local", mode = "static")
 #'
-#' gbif_map_md("Bidens andicola", source = "gbif", mode = "interactive")
-#' gbif_map_md("Bidens andicola", source = "gbif", mode = "static",
+#' gbif_map_md("Bidens andicola", source = "web", mode = "interactive")
+#' gbif_map_md("Bidens andicola", source = "web", mode = "static",
 #'             limit = 500, export_image = TRUE, save_occurrences = TRUE)
 #' gbif_map_md("Bidens andicola", source = "local", mode = "static",
 #'             limit = 500, directory = getwd(), export_image = TRUE,
@@ -854,8 +1784,8 @@
 #'             overwrite = TRUE, fig_width = 8, fig_height = 6)
 #' }
 #' @export
-gbif_map <- function(species,
-                     limit = 100000L,
+gbif_map <- function(species = NULL,
+                     limit = 50000L,
                      mode = c("interactive", "static"),
                      save_occurrences = FALSE,
                      export_image = FALSE,
@@ -863,14 +1793,22 @@ gbif_map <- function(species,
                      colour = NULL,
                      zoom_static = NULL,
                      dpi = NULL,
-                     ppp = NULL,
                      overwrite = TRUE,
-                     source = c("gbif", "local")) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  species <- .sacha_spatial_validate_species(species)
+                     source = c("web", "local"),
+                     taxon_id = NULL,
+                     generate_doi = FALSE,
+                     date = NULL,
+                     static_legend_position = "bottomleft") {
+  .sacha_spatial_apply_taxon_arg_defaults(
+    environment(), match.call(expand.dots = FALSE), names(formals(sys.function()))
+  )
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  species <- input$species
+  taxon_id <- input$taxon_id
   language <- .sacha_spatial_language()
   limit <- .sacha_spatial_validate_limit(limit)
-  if (!is.null(ppp)) dpi <- ppp
+  generate_doi <- .sacha_spatial_validate_logical(generate_doi, "generate_doi")
+  date <- .sacha_spatial_validate_date(date)
   map_inputs <- .sacha_spatial_map_style_inputs(colour, dpi, zoom_static)
   colour <- map_inputs$colour
   dpi <- map_inputs$dpi
@@ -885,15 +1823,34 @@ gbif_map <- function(species,
   source <- .sacha_spatial_source(source)
 
   local_species <- NULL
-  if (identical(source, "gbif")) {
-    occ_result <- .sacha_spatial_gbif_occurrences(species, limit)
-    if (identical(occ_result$status, "error")) {
-      .sacha_spatial_stop_gbif_error(occ_result, species, language)
+  complete_result <- NULL
+  occ_result <- NULL
+  if (identical(source, "web")) {
+    resolved_taxon <- .sacha_spatial_resolve_taxon_input(species, taxon_id)
+    species <- resolved_taxon$species
+    if (isTRUE(generate_doi)) {
+      complete_result <- .sacha_spatial_gbif_occurrence_download(
+        resolved_taxon$taxon, date = date
+      )
+      occurrences <- utils::head(complete_result$occurrences, limit)
+    } else {
+      occ_result <- .sacha_spatial_gbif_occurrences(
+        species, limit, date = date, taxon = resolved_taxon$taxon
+      )
+      if (identical(occ_result$status, "error")) {
+        .sacha_spatial_stop_gbif_error(occ_result, species, language)
+      }
+      occurrences <- occ_result$occurrences
     }
-    occurrences <- occ_result$occurrences
   } else {
-    local_species <- .sacha_spatial_load_local_occurrences(species, directory)
-    occurrences <- utils::head(local_species$occurrences, limit)
+    local_species <- .sacha_spatial_load_local_occurrences(
+      species, directory, taxon_id = taxon_id
+    )
+    species <- .sacha_spatial_validate_species(local_species$metadata$species)
+    local_occurrences <- .sacha_spatial_filter_local_dataset_date(
+      local_species$occurrences, local_species$metadata, date
+    )
+    occurrences <- utils::head(local_occurrences, limit)
   }
   if (!nrow(occurrences)) {
     stop(paste(.sacha_spatial_label("no_occurrences", language), species), call. = FALSE)
@@ -902,14 +1859,17 @@ gbif_map <- function(species,
   taxon_directory <- .sacha_spatial_taxon_directory(species, occurrences, directory)
   local_files <- character()
   if (isTRUE(save_occurrences)) {
-    if (identical(source, "gbif")) {
-      complete_result <- .sacha_spatial_gbif_occurrences(species)
-      if (identical(complete_result$status, "error")) {
-        .sacha_spatial_stop_gbif_error(complete_result, species, language)
-      }
+    if (identical(source, "web")) {
       local_files <- .sacha_spatial_save_local_occurrences(
-        species, complete_result$occurrences, directory, overwrite,
-        taxon_directory = taxon_directory, taxon = complete_result$taxon
+        species, occurrences, directory, overwrite,
+        taxon_directory = taxon_directory, taxon = resolved_taxon$taxon,
+        download = if (is.null(complete_result)) NULL else complete_result$download,
+        date = date,
+        dataset_keys = if (is.null(complete_result)) {
+          occ_result$dataset_keys
+        } else {
+          complete_result$dataset_keys
+        }
       )
     } else {
       warning("`save_occurrences` has no effect: the occurrences were read from a saved local export.",
@@ -920,7 +1880,8 @@ gbif_map <- function(species,
   image_files <- if (isTRUE(export_image)) {
     .sacha_spatial_export_image(
       occurrences, species, taxon_directory, colour, zoom_static, dpi, overwrite,
-      file_prefix = "gbif_map"
+      file_prefix = "gbif_map",
+      static_legend_position = static_legend_position
     )
   } else {
     character()
@@ -934,21 +1895,31 @@ gbif_map <- function(species,
   } else {
     .sacha_spatial_static_map(
       occurrences, colour, zoom_static,
-      boundary = NULL, bbox = NULL
+      boundary = NULL, bbox = NULL,
+      static_legend_position = static_legend_position
     )
   }
-  if (identical(mode, "interactive")) map$width <- NULL
   attr(map, "sacha_occurrences") <- occurrences
   attr(map, "sacha_files") <- c(image_files, local_files)
   attr(map, "sacha_species") <- species
   attr(map, "sacha_map_place") <- NULL
+  attr(map, "sacha_gbif_download") <- if (is.null(complete_result)) {
+    NULL
+  } else {
+    complete_result$download
+  }
+  attr(map, "sacha_retrieved_at") <- if (is.null(local_species)) {
+    NULL
+  } else {
+    local_species$metadata$retrieved_at
+  }
   map
 }
 
 #' @rdname gbif_map
 #' @export
-gbif_map_md <- function(species,
-                        limit = 100000L,
+gbif_map_md <- function(species = NULL,
+                        limit = 50000L,
                         mode = NULL,
                         save_occurrences = FALSE,
                         export_image = FALSE,
@@ -956,33 +1927,41 @@ gbif_map_md <- function(species,
                         colour = NULL,
                         zoom_static = NULL,
                         dpi = NULL,
-                        ppp = NULL,
                         overwrite = TRUE,
                         fig_width = NULL,
                         fig_height = NULL,
-                        source = c("gbif", "local")) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  species <- .sacha_spatial_validate_species(species)
+                        source = c("web", "local"),
+                        taxon_id = NULL,
+                        generate_doi = FALSE,
+                        date = NULL,
+                        static_legend_position = "bottomleft") {
+  .sacha_spatial_apply_taxon_arg_defaults(
+    environment(), match.call(expand.dots = FALSE), names(formals(sys.function()))
+  )
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
   language <- .sacha_spatial_language()
   mode <- .sacha_spatial_resolve_report_mode(mode)
   map <- gbif_map(
-    species = species,
+    species = input$species,
+    taxon_id = input$taxon_id,
     limit = limit,
     mode = mode,
     save_occurrences = save_occurrences,
     export_image = export_image,
     directory = directory,
     colour = colour,
+    static_legend_position = static_legend_position,
     zoom_static = zoom_static,
     dpi = dpi,
-    ppp = ppp,
     overwrite = overwrite,
-    source = source
+    source = source,
+    generate_doi = generate_doi,
+    date = date
   )
-  if (identical(mode, "interactive")) map$width <- "100%"
   .sacha_spatial_emit_md_map(
     map = map, variant = attr(map, "sacha_map_frame")$variant,
-    mode = mode, frame = attr(map, "sacha_map_frame"), species = species,
+    mode = mode, frame = attr(map, "sacha_map_frame"),
+    species = attr(map, "sacha_species"),
     language = language, place = attr(map, "sacha_map_place"),
     fig_width = fig_width, fig_height = fig_height
   )
@@ -990,45 +1969,91 @@ gbif_map_md <- function(species,
 
 #' Save traceable GBIF occurrences for local mapping
 #'
-#' Resolves `species` as an exact, species-level GBIF name in the configured
-#' checklist (COL Extended Release by default) and retrieves georeferenced
-#' records using the resulting taxon key and the same checklist key. By
-#' default, up to 100,000 records are retrieved. Set `limit = NULL` to retrieve
-#' all available records. A finite limit is applied before any geographic
-#' crop. The function
-#' can optionally restrict records to a KML boundary, a named geographic area,
-#' or a WGS 84 bounding box. It saves the returned GBIF fields, machine-readable
-#' metadata including the exact name match and taxon key, and, for a crop, the
-#' corresponding WGS 84 boundary. Full-extent exports can be used offline with
+#' Supply exactly one of `species` or `taxon_id`. GBIF resolves a supplied name
+#' as an exact species-level name or validates a COL XR usage key as an exact
+#' species-level taxon, then retrieves georeferenced records using that taxon
+#' key and the same checklist key. By default, the fast occurrence-search API
+#' retrieves up to 50,000 records without waiting for a registered download.
+#' Set `generate_doi = TRUE` to wait for a registered download and include its
+#' official DOI in `metadata.json`; this requires `GBIF_USER`, `GBIF_PWD`, and
+#' `GBIF_EMAIL` credentials. With `generate_doi = TRUE`, set `limit = NULL` to save
+#' all available records; otherwise increase the finite limit up to 100,000.
+#' For high-volume species such as `Amaranthus hybridus`, prefer a local export
+#' or narrow the query with `date` or spatial filters. Country areas are queried
+#' with GBIF's standardized country predicate; `crop_vector` and `crop_box` are
+#' converted to a common WGS 84 geometry and sent as a spatial predicate. The
+#' exact package boundary is applied to returned records before `limit`, so a
+#' crop receives up to the requested number of matching occurrences. If a
+#' vector geometry exceeds GBIF's query-size limit, its bounding box is used as
+#' a candidate filter and the exact geometry is applied locally. The function can optionally restrict
+#' records to a KML or ESRI Shapefile boundary, a named geographic area, or a
+#' WGS 84 bounding box. It saves the returned GBIF fields and machine-readable
+#' metadata including the exact taxon match and COL XR taxon key, and, for a
+#' crop, the corresponding WGS 84 boundary. Full-extent exports can be used offline with
 #' `source = "local"` in [gbif_map()] or [gbif_map_crop()]. A cropped export can
 #' be used with [gbif_map_crop()] by selecting `source = "local"`,
 #' `local_export = "crop"`, and the same crop arguments used when saving it.
 #' When both functions use the same taxon, occurrence set, and crop selectors,
 #' their saved occurrence records are interchangeable as local input. The
-#' default limit here is 100,000; use `limit = NULL` when the complete available
-#' occurrence set is required.
+#' default limit is 50,000; `limit = NULL` requires `generate_doi = TRUE` to save
+#' the complete available occurrence set. The default fast search saves the returned
+#' records without waiting for a registered GBIF download. Set `generate_doi =
+#' TRUE` to wait for that download and record its DOI in the metadata.
+#' In either form, the accepted COL XR species name determines the output
+#' directory, so supplying a taxon by name or by `taxon_id` uses the same path.
 #'
 #' Full-extent records are saved to
 #' `sacha_exports/Family_Genus_species`; cropped records are saved to
 #' `sacha_exports/Family_Genus_species/Place`, where `Place` is derived from
-#' the KML file name, the resolved geographic area, or the crop-box label (or
+#' the crop-vector file name, the resolved geographic area, or the crop-box label (or
 #' its coordinates when no label is supplied).
+#'
+#' GBIF uses the Catalogue of Life Extended Release (COL XR) as the taxonomic
+#' reference for occurrence downloads. By downloading the data, you
+#' acknowledge GBIF's [data-use agreement](https://www.gbif.org/terms/data-user).
+#' When citing or referring to registered downloads (`generate_doi = TRUE`), follow GBIF's
+#' [citation guidelines](https://www.gbif.org/citation-guidelines#occDataDownload)
+#' and include the DOI assigned to that specific download in every publication.
+#'
+#' Configure the GBIF account credentials in the current R session with
+#' `Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password",
+#' GBIF_EMAIL = "your_account_email")`. To keep them available in future
+#' sessions, add the same three variables to your personal `~/.Renviron` file
+#' and restart R. Do not share or publish that file.
 #'
 #' @param species A binomial scientific name, for example `"Bidens andicola"`.
 #'   GBIF must resolve it as an exact species-level name; approximate or
-#'   higher-rank matches are not used.
-#' @param kml Optional path to a `.kml` file used to restrict occurrences to a
-#'   geographic area. It cannot be combined with `crop_area`.
+#'   higher-rank matches are not used. Supply exactly one of `species` or
+#'   `taxon_id`.
+#' @param taxon_id A COL XR alphanumeric species usage key, such as `"Q2M4"`.
+#'   GBIF verifies that the key identifies one species-level taxon. Supply
+#'   exactly one of `taxon_id` or `species`.
+#' @param crop_vector Optional path to a `.kml` or `.shp` file used to restrict
+#'   occurrences to a geographic area. The file name provides the place name
+#'   used for the caption and export directory. It cannot be combined with
+#'   `crop_area`.
 #' @param crop_area,crop_box Geographic crop selectors shared with
 #'   [gbif_map_crop()]. They use the same area resolution, WGS 84 coordinate
 #'   order, label, and overlap rules. Here they filter the records being saved
-#'   and determine the `Place` subdirectory. `crop_area` cannot be combined
-#'   with `kml`; `crop_box` can be used alone or with either boundary input.
-#' @param limit Maximum number of georeferenced records requested from GBIF
-#'   before spatial filtering, as a positive integer from `1` to `100000`.
-#'   Defaults to `100000`, as in [gbif_map_crop()]. Set to `NULL` to retrieve
-#'   all available records. A saved crop may contain fewer records than a
-#'   finite `limit` because the limit is applied before spatial filtering.
+#'   and determine the `Place` subdirectory. A country area uses GBIF's
+#'   standardized `country` predicate when its two-letter code is available;
+#'   `crop_box` is sent as a WGS 84 spatial predicate. `crop_area` cannot be
+#'   combined with `crop_vector`; `crop_box` can be used alone or with either
+#'   boundary input.
+#' @param limit Maximum number of georeferenced records retained after the
+#'   spatial filter, as a positive integer from `1` to `100000`. Defaults to
+#'   `50000`, as in [gbif_map_crop()]. Set to `NULL` with `generate_doi = TRUE` to
+#'   retrieve all available matching records. For high-volume species, use a
+#'   local export or narrow the query with `date` or a spatial selector.
+#' @param generate_doi Logical. If `TRUE`, request and wait for a registered GBIF
+#'   occurrence download, and record its DOI in `metadata.json`. This requires
+#'   GBIF account credentials. If `FALSE` (default), retrieve records with the
+#'   faster occurrence-search API and save the returned records without waiting
+#'   for a DOI.
+#' @param date Optional ISO date or date range such as
+#'   `"2020-01-01,2021-01-01"`. It filters occurrence datasets by their GBIF
+#'   registry creation date (`createdDate`), then selects records from those
+#'   datasets. It does not filter the date an occurrence was observed.
 #' @param directory Base output directory. As in [gbif_map_crop()], the
 #'   function creates `sacha_exports/Family_Genus_species`; cropped exports
 #'   are placed in its `Place` subdirectory. Defaults to [getwd()].
@@ -1040,7 +2065,8 @@ gbif_map_md <- function(species,
 #' @examples
 #' \dontrun{
 #' gbif_save_occurrences("Bidens andicola")
-#' gbif_save_occurrences("Bidens andicola", kml = "Cotopaxi.kml")
+#' gbif_save_occurrences("Bidens andicola", crop_vector = "Cotopaxi.kml")
+#' gbif_save_occurrences(taxon_id = "Q2M4")
 #' gbif_save_occurrences(
 #'   "Bidens andicola",
 #'   crop_box = c(-75, -10, -70, -5, "study area"),
@@ -1049,25 +2075,38 @@ gbif_map_md <- function(species,
 #' gbif_map("Bidens andicola", source = "local")
 #' }
 #' @export
-gbif_save_occurrences <- function(species,
-                                  kml = NULL,
+gbif_save_occurrences <- function(species = NULL,
+                                  crop_vector = NULL,
                                   crop_area = NULL,
                                   crop_box = NULL,
-                                  limit = 100000L,
+                                  limit = 50000L,
                                   directory = getwd(),
-                                  overwrite = TRUE) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  species <- .sacha_spatial_validate_species(species)
+                                  overwrite = TRUE,
+                                  taxon_id = NULL,
+                                  generate_doi = FALSE,
+                                  date = NULL) {
+  .sacha_spatial_apply_taxon_arg_defaults(
+    environment(), match.call(expand.dots = FALSE), names(formals(sys.function()))
+  )
+  resolved_taxon <- .sacha_spatial_resolve_taxon_input(species, taxon_id)
+  species <- resolved_taxon$species
+  taxon <- resolved_taxon$taxon
   language <- .sacha_spatial_language()
   limit <- if (is.null(limit)) NULL else .sacha_spatial_validate_limit(limit)
+  generate_doi <- .sacha_spatial_validate_logical(generate_doi, "generate_doi")
+  if (is.null(limit) && !isTRUE(generate_doi)) {
+    stop("`limit = NULL` requires `generate_doi = TRUE` so the complete GBIF export is retrieved.",
+         call. = FALSE)
+  }
+  date <- .sacha_spatial_validate_date(date)
   overwrite <- .sacha_spatial_validate_logical(overwrite, "overwrite")
   crop_window <- .sacha_spatial_crop_box_parse(crop_box)
-  box_only <- !is.null(crop_window) && is.null(kml) && is.null(crop_area)
+  box_only <- !is.null(crop_window) && is.null(crop_vector) && is.null(crop_area)
   crop_data <- if (box_only) {
     .sacha_spatial_apply_crop_box(NULL, crop_window)
-  } else if (!is.null(kml) || !is.null(crop_area)) {
+  } else if (!is.null(crop_vector) || !is.null(crop_area)) {
     boundary <- .sacha_spatial_map_crop_boundary(
-      kml = kml, crop_area = crop_area, language = language
+      crop_vector = crop_vector, crop_area = crop_area, language = language
     )
     boundary$region <- boundary$boundary
     if (!is.null(crop_window)) {
@@ -1078,7 +2117,16 @@ gbif_save_occurrences <- function(species,
   } else {
     NULL
   }
-  result <- .sacha_spatial_gbif_occurrences(species, limit = limit)
+  spatial_query <- .sacha_spatial_gbif_crop_query(crop_data)
+  result <- if (isTRUE(generate_doi)) {
+    .sacha_spatial_gbif_occurrence_download(
+      taxon, date = date, crop_data = crop_data
+    )
+  } else {
+    .sacha_spatial_gbif_occurrences(
+      species, limit, date = date, taxon = taxon, crop_data = crop_data
+    )
+  }
   if (identical(result$status, "error")) {
     .sacha_spatial_stop_gbif_error(result, species, language)
   }
@@ -1086,6 +2134,7 @@ gbif_save_occurrences <- function(species,
   if (!is.null(crop_data)) {
     occurrences <- .sacha_spatial_filter_crop(occurrences, crop_data)
   }
+  if (!is.null(limit)) occurrences <- utils::head(occurrences, limit)
   if (!nrow(occurrences)) {
     stop(paste(.sacha_spatial_label("no_occurrences", language), species), call. = FALSE)
   }
@@ -1093,8 +2142,9 @@ gbif_save_occurrences <- function(species,
     NULL
   } else {
     metadata <- list(place = crop_data$place)
-    if (!is.null(crop_data$kml)) metadata$kml <- crop_data$kml
+    if (!is.null(crop_data$crop_vector)) metadata$crop_vector <- crop_data$crop_vector
     if (!is.null(crop_data$crop_area)) metadata$crop_area <- crop_data$crop_area
+    if (!is.null(crop_data$country_code)) metadata$country_code <- crop_data$country_code
     if (!is.null(crop_data$crop_box)) metadata$crop_box <- crop_data$crop_box
     metadata
   }
@@ -1105,7 +2155,11 @@ gbif_save_occurrences <- function(species,
     overwrite = overwrite,
     crop = crop_metadata,
     boundary = if (is.null(crop_data)) NULL else crop_data$region,
-    taxon = result$taxon
+    taxon = result$taxon,
+    download = result$download,
+    date = date,
+    dataset_keys = result$dataset_keys,
+    spatial_query = spatial_query
   )
 }
 
@@ -1119,15 +2173,15 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #' of a species within a geographic boundary, and `gbif_map_crop_md()` creates
 #' the same map for a markdown-formatted report (Quarto or R Markdown).
 #'
-#' The area to map is defined with `kml`, `crop_area`, or `crop_box`. `kml` and
-#' `crop_area` are mutually exclusive and define a boundary that is drawn as
-#' the map outline; `crop_box` defines a rectangle and can be used alone or
-#' together with either of them. With `distribution = "local"` (default), only
+#' The area to map is defined with `crop_vector`, `crop_area`, or `crop_box`.
+#' `crop_vector` and `crop_area` are mutually exclusive and define a boundary
+#' that is drawn as the map outline; `crop_box` defines a rectangle and can be
+#' used alone or together with either of them. With `distribution = "local"` (default), only
 #' records inside the area are mapped. With `distribution = "global"`, all
 #' available georeferenced records are mapped and the boundary, when there is
 #' one, is kept as a reference outline.
 #'
-#' When `crop_box` is combined with `kml` or `crop_area`, the boundary is
+#' When `crop_box` is combined with `crop_vector` or `crop_area`, the boundary is
 #' clipped to the rectangle and the map is framed on the rectangle, so that
 #' only the part of the area that falls inside it is shown; the rectangle
 #' itself is not drawn. For example, `crop_area = "EC"` maps Ecuador including
@@ -1138,20 +2192,31 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #' planar longitude/latitude coordinates, so the edges of the rectangle follow
 #' the meridians and parallels given.
 #'
-#' With `source = "gbif"` (default), the supplied binomial is first resolved
-#' as an exact, species-level name in the configured GBIF checklist (COL
-#' Extended Release by default). Its taxon key and that same checklist key are
-#' then used for the occurrence query, preventing approximate or higher-rank
-#' name matches. With `source = "local"`, GBIF is not contacted and
+#' For a GBIF source with `distribution = "local"`, `crop_area` is sent to GBIF
+#' as its standardized two-letter `country` filter when available. A vector or
+#' rectangle is sent as a WGS 84 spatial predicate in both fast occurrence
+#' searches and registered downloads. The returned points are then checked
+#' against the exact package boundary. If a complex vector exceeds GBIF's query
+#' size limit, its bounding box is used to retrieve candidates before exact
+#' local filtering. A `distribution = "global"` map keeps its global query;
+#' when `save_occurrences = TRUE`, its saved crop is retrieved separately with
+#' the spatial filter.
+#'
+#' With `source = "web"` (default), supply exactly one of `species` or
+#' `taxon_id`. GBIF resolves the binomial as an exact, species-level name or
+#' validates the COL XR usage key as an exact species-level taxon. Its taxon
+#' key and that same checklist key are then used for the occurrence query,
+#' preventing approximate or higher-rank name matches. The accepted name
+#' determines the output directory, so either input form selects the same
+#' species export. With `source = "local"`, GBIF is not contacted and
 #' records are read from a saved export under `sacha_exports` in
 #' `directory`, in one of two ways set by `local_export`:
 #' \itemize{
 #'   \item `"species"` (default): the full-extent export of the species
 #'     (`sacha_exports/Family_Genus_species`), produced by
 #'     `save_occurrences = TRUE` in [gbif_map()] or by
-#'     [gbif_save_occurrences()]. The area is applied to these records
-#'     exactly as it is applied to records retrieved from GBIF. This is the
-#'     only option compatible with `distribution = "global"`.
+#'     [gbif_save_occurrences()]. The selected area is applied to these
+#'     records as it is applied to records retrieved from GBIF.
 #'   \item `"crop"`: an export previously saved for the same area
 #'     (`sacha_exports/Family_Genus_species/Place`), which contains the
 #'     filtered records and the stored boundary. It requires
@@ -1159,6 +2224,13 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #'     the same `crop_box` (and therefore the same label) must be supplied to
 #'     identify it.
 #' }
+#' With `distribution = "global"`, a full-extent species export is used when
+#' available. If it is absent, compatible cropped exports for the same COL XR
+#' taxon are found recursively and combined; duplicate records with the same
+#' GBIF or dataset-occurrence identifier are removed. A single cropped export
+#' is also accepted. The map's `sacha_local_coverage` attribute reports whether
+#' it used a full-extent export or partial local crops. In this mode,
+#' `local_export` does not prevent fallback to the widest available local data.
 #'
 #' Interactive maps show the scientific name, year, locality, and observer
 #' (`recordedBy`) reported by GBIF for each occurrence. Missing values are
@@ -1170,17 +2242,35 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #' `Place` is the name of the area or, when `crop_box` is supplied, its label.
 #' If `crop_box` is supplied, the stored records and boundary are those inside
 #' the rectangle; when `crop_box` is used alone, the stored boundary is the
-#' rectangle itself. Records are not truncated by `limit`.
+#' rectangle itself. The spatial filter is applied before `limit`. For a global
+#' GBIF map, saving a crop performs a separate spatially filtered retrieval;
+#' its `metadata.json` records the query and, when requested, the DOI for that
+#' filtered download.
 #' Three files are written: `occurrences.gpkg` (records in WGS 84, EPSG:4326),
 #' `boundary.gpkg`, and `metadata.json` (query, retrieval date, coordinate
-#' reference system, and record count). With `distribution = "global"` the map
-#' still shows all records, but only those inside the area are saved; if
+#' reference system, record count, and, when `generate_doi = TRUE`, the official
+#' GBIF download key and DOI). Registered downloads require `GBIF_USER`,
+#' `GBIF_PWD`, and `GBIF_EMAIL` credentials. With `distribution = "global"` the map
+#' still shows its global record set, but only those inside the area are saved; if
 #' none falls inside, nothing is saved and a warning is issued. When the
-#' records come from the full-extent local export, the metadata retain the
-#' original GBIF provenance and add a `derived_from` entry and the processing
-#' date, so that a crop produced offline has the same traceability as one
-#' produced from GBIF. If the records were read from a cropped local export,
-#' they are already saved and nothing is written.
+#' records come from the full-extent local export, the metadata retain its
+#' query, provenance, and any DOI it contains, and add a `derived_from` entry
+#' and the processing date, so that a crop produced offline has the same traceability as one
+#' produced from GBIF. When `source = "local"`, `local_export = "crop"`, and
+#' `distribution = "local"`, the records are already saved and nothing is written.
+#'
+#' Configure the GBIF account credentials in the current R session with
+#' `Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password",
+#' GBIF_EMAIL = "your_account_email")`. To keep them available in future
+#' sessions, add the same three variables to your personal `~/.Renviron` file
+#' and restart R. Do not share or publish that file.
+#'
+#' GBIF uses the Catalogue of Life Extended Release (COL XR) as the taxonomic
+#' reference for occurrence downloads. By downloading the data, you
+#' acknowledge GBIF's [data-use agreement](https://www.gbif.org/terms/data-user).
+#' When citing or referring to registered downloads (`generate_doi = TRUE`), follow GBIF's
+#' [citation guidelines](https://www.gbif.org/citation-guidelines#occDataDownload)
+#' and include the DOI assigned to that specific download in every publication.
 #'
 #' Setting `export_image = TRUE` writes the static map as a PNG file, whatever
 #' the value of `mode`, to the same directory as the saved files
@@ -1194,7 +2284,7 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #' `crop_area = "Ecuador"` yields
 #' `fig-gbif-map-crop-bidens_andicola-ecuador`; the label
 #' `"Ecuador continental"` yields
-#' `fig-gbif-map-crop-bidens_andicola-ecuador_continental`. A KML map uses its
+#' `fig-gbif-map-crop-bidens_andicola-ecuador_continental`. A crop-vector map uses its
 #' resolved place name. Use the resulting ID as `@fig-gbif-map-crop-...` in
 #' report prose; `distribution`, `source`, and `mode` do not change the ID.
 #' For generated Markdown figures, set `results: asis` on the Quarto or
@@ -1202,15 +2292,19 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #'
 #' @param species A binomial scientific name in the form `"Genus species"`,
 #'   e.g. `"Bidens andicola"`. GBIF must resolve it as an exact species-level
-#'   name; approximate and higher-rank matches are rejected.
-#' @param kml Path to a `.kml` file whose geometry defines the crop extent and
-#'   is drawn as the map outline. The file name provides the place name used
-#'   in captions and in the export directory. It cannot be combined with
-#'   `crop_area`.
+#'   name; approximate and higher-rank matches are rejected. Supply exactly
+#'   one of `species` or `taxon_id`.
+#' @param taxon_id A COL XR alphanumeric species usage key, such as `"Q2M4"`.
+#'   GBIF verifies that the key identifies one species-level taxon. Supply
+#'   exactly one of `taxon_id` or `species`.
+#' @param crop_vector Path to a `.kml` or `.shp` file whose geometry defines
+#'   the crop extent and is drawn as the map outline. The file name provides
+#'   the place name used in captions and in the export directory. It cannot be
+#'   combined with `crop_area`.
 #' @param crop_area Geographic area name or code resolved against Natural
 #'   Earth's administrative gazetteer, such as `"Ecuador"` or `"EC"`. Its
 #'   complete administrative name is used in captions and legends, unless
-#'   `crop_box` provides a label. It cannot be combined with `kml`.
+#'   `crop_box` provides a label. It cannot be combined with `crop_vector`.
 #' @param crop_box Rectangular crop in WGS 84 decimal degrees, given as
 #'   `c(xmin, ymin, xmax, ymax)`: west and east longitude, south and north
 #'   latitude, e.g. `c(-82.5, -5.5, -75.0, 1.6)`. A fifth element, a character
@@ -1219,20 +2313,24 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #'   legend: it uses this label when present and otherwise uses the formatted
 #'   rectangle coordinates, e.g. `"82.5°W, 5.5°S, 75°W, 1.6°N"`. A supplied
 #'   label also replaces the area name in captions and the export directory.
-#'   It can be used alone or together with `kml` or `crop_area`; in the latter
+#'   It can be used alone or together with `crop_vector` or `crop_area`; in the latter
 #'   case it must overlap the boundary. The map is framed on the rectangle,
 #'   which is not drawn. With `distribution = "global"` all records are still
 #'   mapped, but only those inside the frame are visible. Defaults to `NULL`
 #'   (no rectangular crop).
 #' @param limit Maximum number of georeferenced occurrences used to draw the
-#'   map, an integer between `1` and `100000`. Defaults to `100000`.
+#'   map, an integer between `1` and `100000`. For local distribution, spatial
+#'   filters are applied before this limit. Defaults to `50000`. For
+#'   high-volume species such as `Amaranthus hybridus`, prefer a local export or
+#'   narrow the query with `date`, `crop_vector`, `crop_area`, or `crop_box`.
 #' @param mode Map type: `"interactive"` (default; a Leaflet widget) or
 #'   `"static"` (a ggplot2 map). In `gbif_map_crop_md()`, `NULL` selects an
 #'   interactive map for HTML output and a static map for other formats.
-#' @param save_occurrences Logical. If `TRUE`, the records located within the
-#'   area, its boundary, and a provenance file containing the validated GBIF
-#'   taxon key and exact name match are saved under
-#'   `sacha_exports/Family_Genus_species/Place`. Defaults to `FALSE`.
+#' @param save_occurrences Logical. If `TRUE`, records located within the area,
+#'   the boundary, and a provenance file are saved under
+#'   `sacha_exports/Family_Genus_species/Place`. The metadata includes the
+#'   validated COL XR taxon key and exact taxon match. A registered download DOI
+#'   is included when `generate_doi = TRUE`. Defaults to `FALSE`.
 #' @param export_image Logical. If `TRUE`, the static map is written as a PNG
 #'   file to `sacha_exports/Family_Genus_species/Place`. Defaults to `FALSE`.
 #' @param directory Base directory in which `sacha_exports` is created or,
@@ -1241,35 +2339,56 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #' @param colour Colour of the occurrence points as a hexadecimal code with 3,
 #'   4, 6, or 8 digits, e.g. `"#1B9E77"`. When `NULL`, the package default
 #'   colour is used.
+#' @param static_legend_position Position of the static legend as one composed
+#'   unit with its scale bar and north arrow. Applies to static maps and PNGs
+#'   written with `export_image = TRUE`, including when `mode` is
+#'   `"interactive"`: `"bottomleft"` (default), `"bottom"`,
+#'   `"bottomright"`, `"right"`, `"topright"`, `"top"`, `"topleft"`, or
+#'   `"left"`. It does not change the interactive map widget.
 #' @param dpi Resolution of the exported PNG in dots per inch. When `NULL`,
 #'   the package default resolution is used.
-#' @param ppp Spanish-language synonym of `dpi` (puntos por pulgada). If both
-#'   are supplied, `ppp` takes precedence.
 #' @param overwrite Logical. Should existing output files be replaced? If
 #'   `FALSE`, an existing local occurrence export raises an error. Defaults to
 #'   `TRUE`.
 #' @param distribution Geographic distribution of the mapped records:
-#'   `"local"` (default) restricts them to the area; `"global"` includes
-#'   all records of the species.
-#' @param source Occurrence source: `"gbif"` (default) retrieves records from
+#'   `"local"` (default) retrieves and maps records within the area;
+#'   `"global"` maps the available global record set in the map frame. For a
+#'   local source, the widest compatible saved extent is used and may be
+#'   partial.
+#' @param source Occurrence source: `"web"` (default) retrieves records from
 #'   GBIF; `"local"` reads a saved export from `sacha_exports` under
 #'   `directory`.
-#' @param local_export Saved export used when `source = "local"`:
-#'   `"species"` (default) reads the full-extent export of the species and
-#'   applies the area; `"crop"` reads the export saved for the area.
-#'   It is ignored when `source = "gbif"`.
-#' @param fig_width,fig_height Figure dimensions in inches for static maps
-#'   produced by `gbif_map_crop_md()`. They do not set the size of interactive
-#'   Leaflet maps. When `NULL`, static-map dimensions follow the map aspect
-#'   ratio.
+#' @param local_export Saved export used when `source = "local"` and
+#'   `distribution = "local"`: `"species"` (default) reads the full-extent
+#'   export and applies the area; `"crop"` reads the export saved for the area.
+#'   For `distribution = "global"`, the full-extent export is preferred and
+#'   compatible cropped exports are combined if no full-extent export exists.
+#'   It is ignored when `source = "web"`.
+#' @param generate_doi Logical. If `TRUE` and `source = "web"`, create and wait
+#'   for a registered GBIF download, and record its DOI in `metadata.json`.
+#'   This requires GBIF account credentials. If `FALSE` (default), use the
+#'   faster occurrence-search API and save the returned records without waiting
+#'   for a DOI. For a local source, no GBIF request is made.
+#' @param date Optional ISO date or range such as
+#'   `"2020-01-01,2021-01-01"`. It filters occurrence datasets by their GBIF
+#'   registry creation date (`createdDate`), then selects records from those
+#'   datasets. It does not filter the date an occurrence was observed. Local
+#'   exports can use only the same date filter recorded in their metadata.
+#' @param fig_width,fig_height Dimensions in inches for static maps produced
+#'   by `gbif_map_crop_md()`. When `NULL`, the static map dimensions follow its
+#'   aspect ratio. Interactive Leaflet maps use the widget and output
+#'   container's default sizing.
 #' @return A Leaflet widget or a ggplot2 object. Paths of the written files
 #'   are stored in the `"sacha_files"` attribute, the plotted records in
-#'   `"sacha_occurrences"`, the species in `"sacha_species"`, and the resolved
-#'   place name in `"sacha_crop_place"`. `gbif_map_crop_md()` returns the map
+#'   `"sacha_occurrences"`, the species in `"sacha_species"`, the resolved
+#'   place name in `"sacha_crop_place"`, and local coverage details in
+#'   `"sacha_local_coverage"` for global local-source maps.
+#'   `gbif_map_crop_md()` returns the map
 #'   formatted for the report output.
 #' @examples
 #' \dontrun{
-#' map <- gbif_map_crop("Bidens andicola", kml = "Ecuador.kml", limit = 100)
+#' map <- gbif_map_crop("Bidens andicola", crop_vector = "Ecuador.kml", limit = 100)
+#' map_by_key <- gbif_map_crop(taxon_id = "Q2M4", crop_area = "Ecuador")
 #' map
 #'
 #' gbif_map_crop("Bidens andicola", crop_area = "EC",
@@ -1285,25 +2404,25 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #'               local_export = "crop")
 #'
 #' gbif_map_crop_md("Bidens andicola", crop_area = "Ecuador",
-#'                   source = "gbif", distribution = "local")
+#'                   source = "web", distribution = "local")
 #' gbif_map_crop_md("Bidens andicola", crop_area = "Ecuador",
 #'                   crop_box = c(-82.5, -5.5, -75.0, 1.6,
 #'                                "Ecuador continental"),
-#'                   source = "gbif", distribution = "global", mode = "static",
+#'                   source = "web", distribution = "global", mode = "static",
 #'                   save_occurrences = TRUE, export_image = TRUE,
-#'                   colour = "#1B9E77", ppp = 300, overwrite = TRUE,
+#'                   colour = "#1B9E77", dpi = 300, overwrite = TRUE,
 #'                   fig_width = 8, fig_height = 6)
 #' gbif_map_crop_md("Bidens andicola",
 #'                   crop_box = c(-82.5, -5.5, -75.0, 1.6,
 #'                                "Ecuador continental"),
-#'                   source = "gbif", distribution = "local")
-#' gbif_map_crop_md("Bidens andicola", kml = "study_boundary.kml",
-#'                   source = "gbif", distribution = "local", mode = "static",
+#'                   source = "web", distribution = "local")
+#' gbif_map_crop_md("Bidens andicola", crop_vector = "study_boundary.kml",
+#'                   source = "web", distribution = "local", mode = "static",
 #'                   export_image = TRUE)
-#' gbif_map_crop_md("Bidens andicola", kml = "study_boundary.kml",
+#' gbif_map_crop_md("Bidens andicola", crop_vector = "study_boundary.shp",
 #'                   crop_box = c(-82.5, -5.5, -75.0, 1.6,
 #'                                "study area detail"),
-#'                   source = "gbif", distribution = "global")
+#'                   source = "web", distribution = "global")
 #' gbif_map_crop_md("Bidens andicola", crop_area = "Ecuador",
 #'                   source = "local", local_export = "species",
 #'                   distribution = "global")
@@ -1317,27 +2436,35 @@ gbif_save_ocurrences <- gbif_save_occurrences
 #'                   distribution = "local")
 #' }
 #' @export
-gbif_map_crop <- function(species,
-                          kml = NULL,
+gbif_map_crop <- function(species = NULL,
+                          crop_vector = NULL,
                           crop_area = NULL,
                           crop_box = NULL,
-                          limit = 100000L,
+                          limit = 50000L,
                           mode = c("interactive", "static"),
                           save_occurrences = FALSE,
                           export_image = FALSE,
                           directory = getwd(),
                           colour = NULL,
                           dpi = NULL,
-                          ppp = NULL,
                           overwrite = TRUE,
                           distribution = c("local", "global"),
-                          source = c("gbif", "local"),
-                          local_export = c("species", "crop")) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  species <- .sacha_spatial_validate_species(species)
+                          source = c("web", "local"),
+                          local_export = c("species", "crop"),
+                          taxon_id = NULL,
+                          generate_doi = FALSE,
+                          date = NULL,
+                          static_legend_position = "bottomleft") {
+  .sacha_spatial_apply_taxon_arg_defaults(
+    environment(), match.call(expand.dots = FALSE), names(formals(sys.function()))
+  )
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
+  species <- input$species
+  taxon_id <- input$taxon_id
   language <- .sacha_spatial_language()
   limit <- .sacha_spatial_validate_limit(limit)
-  if (!is.null(ppp)) dpi <- ppp
+  generate_doi <- .sacha_spatial_validate_logical(generate_doi, "generate_doi")
+  date <- .sacha_spatial_validate_date(date)
   map_inputs <- .sacha_spatial_map_style_inputs(colour, dpi)
   colour <- map_inputs$colour
   dpi <- map_inputs$dpi
@@ -1350,37 +2477,39 @@ gbif_map_crop <- function(species,
   distribution <- match.arg(distribution, c("local", "global"))
   source <- .sacha_spatial_source(source)
   local_export <- .sacha_spatial_local_export(local_export)
-  crop_window <- .sacha_spatial_crop_box_parse(crop_box)
-  box_only <- !is.null(crop_window) && is.null(kml) && is.null(crop_area)
-
-  if (identical(source, "local") && identical(distribution, "global") &&
-      identical(local_export, "crop")) {
-    stop("`local_export = \"crop\"` requires `distribution = \"local\"`: a cropped export does not contain records outside its boundary.",
-         call. = FALSE)
+  if (identical(source, "web")) {
+    resolved_taxon <- .sacha_spatial_resolve_taxon_input(species, taxon_id)
+    species <- resolved_taxon$species
   }
+  crop_window <- .sacha_spatial_crop_box_parse(crop_box)
+  box_only <- !is.null(crop_window) && is.null(crop_vector) && is.null(crop_area)
+
   use_crop_export <- identical(source, "local") && identical(distribution, "local") &&
     identical(local_export, "crop")
+  local_retrieved_at <- NULL
 
   if (use_crop_export) {
     crop_selector <- if (box_only) {
       list(
         place = crop_window$label %spatial||%
           .sacha_spatial_crop_box_label(crop_window$extent),
-        kml = NULL,
+        crop_vector = NULL,
         crop_area = NULL,
         crop_box = NULL
       )
     } else {
       selector <- .sacha_spatial_map_crop_boundary(
-        kml = kml, crop_area = crop_area, language = language
+        crop_vector = crop_vector, crop_area = crop_area, language = language
       )
       if (!is.null(crop_window$label)) selector$place <- crop_window$label
       selector
     }
     crop_place <- crop_selector$place
     local_crop <- .sacha_spatial_load_local_occurrences(
-      species, directory, crop_place, crop_only = TRUE
+      species, directory, crop_place, crop_only = TRUE, taxon_id = taxon_id
     )
+    species <- .sacha_spatial_validate_species(local_crop$metadata$species)
+    local_retrieved_at <- local_crop$metadata$retrieved_at
     boundary_path <- file.path(local_crop$directory, "boundary.gpkg")
     if (!file.exists(boundary_path)) {
       stop(sprintf("Local cropped export for '%s' does not contain a saved boundary.", species),
@@ -1399,7 +2528,7 @@ gbif_map_crop <- function(species,
         sf::st_bbox(crop_window$extent, crs = sf::st_crs(4326))
       },
       place = local_crop$metadata$crop$place %spatial||% crop_place,
-      kml = crop_selector$kml,
+      crop_vector = crop_selector$crop_vector,
       crop_area = crop_selector$crop_area,
       crop_box = crop_selector$crop_box,
       window = crop_window$extent
@@ -1411,7 +2540,7 @@ gbif_map_crop <- function(species,
     crop_data <- .sacha_spatial_apply_crop_box(NULL, crop_window)
   } else {
     crop_data <- .sacha_spatial_map_crop_boundary(
-      kml = kml, crop_area = crop_area, language = language
+      crop_vector = crop_vector, crop_area = crop_area, language = language
     )
     crop_data$region <- crop_data$boundary
     if (!is.null(crop_window)) {
@@ -1421,26 +2550,64 @@ gbif_map_crop <- function(species,
 
   local_species <- NULL
   cropped_occurrences <- NULL
-  if (identical(source, "gbif")) {
-    occ_result <- .sacha_spatial_gbif_occurrences(species, limit)
+  if (identical(source, "web")) {
+    occ_result <- if (isTRUE(generate_doi)) {
+      .sacha_spatial_gbif_occurrence_download(
+        resolved_taxon$taxon, date = date,
+        crop_data = if (identical(distribution, "local")) crop_data else NULL
+      )
+    } else {
+      .sacha_spatial_gbif_occurrences(
+        species, limit, date = date, taxon = resolved_taxon$taxon,
+        crop_data = if (identical(distribution, "local")) crop_data else NULL
+      )
+    }
     if (identical(occ_result$status, "error")) {
       .sacha_spatial_stop_gbif_error(occ_result, species, language)
     }
-    occurrences <- occ_result$occurrences
+    occ_result$taxon <- resolved_taxon$taxon
+    retrieved_occurrences <- occ_result$occurrences
     if (identical(distribution, "local")) {
-      occurrences <- .sacha_spatial_filter_crop(occurrences, crop_data)
+      cropped_occurrences <- .sacha_spatial_filter_crop(retrieved_occurrences, crop_data)
+      if (!is.null(limit)) cropped_occurrences <- utils::head(cropped_occurrences, limit)
+      occurrences <- cropped_occurrences
+    } else {
+      if (!is.null(limit)) retrieved_occurrences <- utils::head(retrieved_occurrences, limit)
+      cropped_occurrences <- .sacha_spatial_filter_crop(retrieved_occurrences, crop_data)
+      occurrences <- retrieved_occurrences
     }
   } else if (use_crop_export) {
-    occurrences <- utils::head(local_crop$occurrences, limit)
+    occurrences <- .sacha_spatial_filter_local_dataset_date(
+      local_crop$occurrences, local_crop$metadata, date
+    )
+    if (!is.null(limit)) occurrences <- utils::head(occurrences, limit)
+    cropped_occurrences <- occurrences
   } else {
-    local_species <- .sacha_spatial_load_local_occurrences(species, directory)
-    cropped_occurrences <- .sacha_spatial_filter_crop(
-      local_species$occurrences, crop_data
+    local_species <- .sacha_spatial_load_local_occurrences(
+      species, directory, taxon_id = taxon_id,
+      prefer_available = identical(distribution, "global"), date = date
     )
-    occurrences <- utils::head(
-      if (identical(distribution, "local")) cropped_occurrences else local_species$occurrences,
-      limit
+    local_retrieved_at <- local_species$caption_retrieved_at
+    if (is.null(local_retrieved_at)) {
+      local_retrieved_at <- local_species$metadata$retrieved_at
+    }
+    species <- .sacha_spatial_validate_species(local_species$metadata$species)
+    local_occurrences <- .sacha_spatial_filter_local_dataset_date(
+      local_species$occurrences, local_species$metadata, date
     )
+    if (identical(distribution, "local")) {
+      cropped_occurrences <- .sacha_spatial_filter_crop(local_occurrences, crop_data)
+      if (!is.null(limit)) cropped_occurrences <- utils::head(cropped_occurrences, limit)
+      occurrences <- cropped_occurrences
+    } else {
+      occurrences <- if (!is.null(limit)) {
+        utils::head(local_occurrences, limit)
+      } else {
+        local_occurrences
+      }
+      cropped_occurrences <- .sacha_spatial_filter_crop(local_occurrences, crop_data)
+      if (!is.null(limit)) cropped_occurrences <- utils::head(cropped_occurrences, limit)
+    }
   }
   if (!nrow(occurrences)) {
     stop(paste(.sacha_spatial_label("no_occurrences", language), species), call. = FALSE)
@@ -1463,31 +2630,62 @@ gbif_map_crop <- function(species,
       warning("`save_occurrences` has no effect: the occurrences were read from a saved local export that already contains them.",
               call. = FALSE)
     } else {
-      if (identical(source, "gbif")) {
-        complete_result <- .sacha_spatial_gbif_occurrences(species)
-        if (identical(complete_result$status, "error")) {
-          .sacha_spatial_stop_gbif_error(complete_result, species, language)
+      save_result <- NULL
+      if (identical(source, "web")) {
+        save_result <- if (identical(distribution, "global")) {
+          if (isTRUE(generate_doi)) {
+            .sacha_spatial_gbif_occurrence_download(
+              resolved_taxon$taxon, date = date, crop_data = crop_data
+            )
+          } else {
+            .sacha_spatial_gbif_occurrences(
+              species, limit, date = date, taxon = resolved_taxon$taxon,
+              crop_data = crop_data
+            )
+          }
+        } else {
+          occ_result
+        }
+        if (identical(save_result$status, "error")) {
+          .sacha_spatial_stop_gbif_error(save_result, species, language)
         }
         cropped_occurrences <- .sacha_spatial_filter_crop(
-          complete_result$occurrences, crop_data
+          save_result$occurrences, crop_data
         )
+        if (!is.null(limit)) cropped_occurrences <- utils::head(cropped_occurrences, limit)
       }
-      if (!nrow(cropped_occurrences)) {
+      if (is.null(cropped_occurrences) || !nrow(cropped_occurrences)) {
         warning("`save_occurrences` saved nothing: no occurrences fall within the crop boundary.",
                 call. = FALSE)
       } else {
+        crop_metadata <- list(
+          place = crop_data$place,
+          crop_vector = crop_data$crop_vector,
+          crop_area = crop_data$crop_area,
+          crop_box = crop_data$crop_box,
+          country_code = crop_data$country_code
+        )
         local_files <- .sacha_spatial_save_local_occurrences(
           species, cropped_occurrences, directory, overwrite,
-          crop = list(
-            place = crop_data$place,
-            kml = crop_data$kml,
-            crop_area = crop_data$crop_area,
-            crop_box = crop_data$crop_box
-          ),
+          crop = crop_metadata,
           boundary = crop_data$region,
           taxon_directory = taxon_directory,
           parent = if (!is.null(local_species)) local_species$metadata,
-          taxon = if (identical(source, "gbif")) complete_result$taxon else NULL
+          taxon = if (identical(source, "web")) save_result$taxon else NULL,
+          download = if (identical(source, "web")) save_result$download else NULL,
+          date = date,
+          dataset_keys = if (identical(source, "web")) {
+            save_result$dataset_keys
+          } else if (is.null(date)) {
+            NULL
+          } else {
+            local_species$metadata$dataset_filter$datasetKeys
+          },
+          spatial_query = if (identical(source, "web")) {
+            save_result$spatial_query
+          } else {
+            NULL
+          }
         )
       }
     }
@@ -1499,7 +2697,8 @@ gbif_map_crop <- function(species,
       zoom = .sacha_spatial_map_style_crop_zoom(), dpi, overwrite,
       boundary = crop_data$boundary, bbox = map_bbox,
       file_prefix = if (identical(distribution, "global")) "gbif_map_crop_global" else "gbif_map_crop",
-      legend_place = crop_legend_place
+      legend_place = crop_legend_place,
+      static_legend_position = static_legend_position
     )
   } else {
     character()
@@ -1514,44 +2713,63 @@ gbif_map_crop <- function(species,
     .sacha_spatial_static_map(
       occurrences, colour, zoom = .sacha_spatial_map_style_crop_zoom(),
       boundary = crop_data$boundary,
-      bbox = map_bbox, legend_place = crop_legend_place
+      bbox = map_bbox, legend_place = crop_legend_place,
+      static_legend_position = static_legend_position
     )
   }
-  if (identical(mode, "interactive")) map$width <- NULL
   attr(map, "sacha_occurrences") <- occurrences
   attr(map, "sacha_files") <- c(image_files, local_files)
   attr(map, "sacha_species") <- species
   attr(map, "sacha_crop_place") <- crop_data$place
+  attr(map, "sacha_gbif_download") <- if (identical(source, "web")) {
+    occ_result$download %spatial||% NULL
+  } else {
+    NULL
+  }
+  attr(map, "sacha_retrieved_at") <- local_retrieved_at
+  attr(map, "sacha_local_coverage") <- if (
+    identical(source, "local") && identical(distribution, "global")
+  ) {
+    local_species$metadata$local_coverage %spatial||% NULL
+  } else {
+    NULL
+  }
   map
 }
 
 #' @rdname gbif_map_crop
 #' @export
-gbif_map_crop_md <- function(species,
-                             kml = NULL,
+gbif_map_crop_md <- function(species = NULL,
+                             crop_vector = NULL,
                              crop_area = NULL,
                              crop_box = NULL,
-                             limit = 100000L,
+                             limit = 50000L,
                              mode = NULL,
                              save_occurrences = FALSE,
                              export_image = FALSE,
                              directory = getwd(),
                              colour = NULL,
                              dpi = NULL,
-                             ppp = NULL,
                              overwrite = TRUE,
                              distribution = c("local", "global"),
                              fig_width = NULL,
                              fig_height = NULL,
-                             source = c("gbif", "local"),
-                             local_export = c("species", "crop")) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  species <- .sacha_spatial_validate_species(species)
+                             source = c("web", "local"),
+                             local_export = c("species", "crop"),
+                             taxon_id = NULL,
+                             generate_doi = FALSE,
+                             date = NULL,
+                             static_legend_position = "bottomleft") {
+  .sacha_spatial_apply_taxon_arg_defaults(
+    environment(), match.call(expand.dots = FALSE), names(formals(sys.function()))
+  )
+  input <- .sacha_spatial_taxon_input(species, taxon_id)
   language <- .sacha_spatial_language()
   mode <- .sacha_spatial_resolve_report_mode(mode)
   map <- gbif_map_crop(
-    species = species,
-    kml = kml,
+    species = input$species,
+    crop_vector = crop_vector,
+    taxon_id = input$taxon_id,
     crop_area = crop_area,
     crop_box = crop_box,
     limit = limit,
@@ -1560,17 +2778,18 @@ gbif_map_crop_md <- function(species,
     export_image = export_image,
     directory = directory,
     colour = colour,
+    static_legend_position = static_legend_position,
     dpi = dpi,
-    ppp = ppp,
     overwrite = overwrite,
     distribution = distribution,
     source = source,
-    local_export = local_export
+    local_export = local_export,
+    generate_doi = generate_doi,
+    date = date
   )
-  if (identical(mode, "interactive")) map$width <- "100%"
   .sacha_spatial_emit_md_map(
     map = map, variant = "crop", mode = mode,
-    frame = attr(map, "sacha_map_frame"), species = species,
+    frame = attr(map, "sacha_map_frame"), species = attr(map, "sacha_species"),
     language = language, place = attr(map, "sacha_crop_place"),
     fig_width = fig_width, fig_height = fig_height
   )

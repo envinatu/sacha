@@ -59,18 +59,21 @@
       <a href="articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="news/index.html">Changelog</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
@@ -94,6 +97,7 @@
   <div class="contents col-md-9">
 
 
+<!-- badges: end -->
 <div class="section level1">
 <div class="page-header"><h1 id="sacha">sacha<a class="anchor" aria-label="anchor" href="#sacha"></a>
 </h1></div>
@@ -115,7 +119,7 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/envinatu/sacha" class="external-link">sacha</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/sacha_configure.html">sacha_configure</a></span><span class="op">(</span></span>
-<span>  global <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span>,</span>
+<span>  clb <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span>,</span>
 <span>  inat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span>,</span>
 <span>  spatial <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -124,11 +128,11 @@
 <span><span class="fu"><a href="reference/classification.html">classification</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/common_names.html">common_names</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
 <p>These accessors query their configured ChecklistBank service. A connection to the relevant service is required when the result is not already available in the session cache.</p>
-<p>For an interactive map of georeferenced records:</p>
+<p>For a static map of georeferenced records:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/gbif_map.html">gbif_map</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Bidens andicola"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"gbif"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"web"</span>,</span>
 <span>  mode <span class="op">=</span> <span class="st">"static"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>To inspect iNaturalist photographs interactively:</p>
@@ -163,7 +167,7 @@ inat_images_md(
 <div class="section level2">
 <h2 id="data-sources-and-local-workflows">Data sources and local workflows<a class="anchor" aria-label="anchor" href="#data-sources-and-local-workflows"></a>
 </h2>
-<p>The source option is specific to each module:</p>
+<p>The <code>source</code> argument uses the same choices where it is available; each module applies them as follows:</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -179,12 +183,12 @@ inat_images_md(
 <tr>
 <td align="left">ChecklistBank and Catalogue of Life</td>
 <td align="left">Accessors query the configured service.</td>
-<td align="left">Accessors do not automatically read a downloaded ColDP archive.</td>
+<td align="left">Local source support for downloading and reading ColDP archives is currently under development.</td>
 </tr>
 <tr>
 <td align="left">GBIF</td>
 <td align="left">
-<code>source = "gbif"</code> queries GBIF for georeferenced occurrence records.</td>
+<code>source = "web"</code> queries GBIF for georeferenced occurrence records.</td>
 <td align="left">
 <code>source = "local"</code> reads occurrence exports previously saved by the package.</td>
 </tr>
@@ -211,6 +215,11 @@ inat_images_md(
 <span><span class="fu"><a href="reference/classification.html">classification</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/sacha_clear_cache.html">sacha_clear_cache</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="related-application">Related application<a class="anchor" aria-label="anchor" href="#related-application"></a>
+</h2>
+<p><code>sacha</code> is being used alongside <code>pacha</code> in the Quarto book <a href="https://envinatu.github.io/envyura/" class="external-link"><em>Plantas susceptibles de uso sostenible en la zona andina de la provincia de Cotopaxi, Ecuador</em></a>, which applies both packages to the study of plants and sustainable use in the Andean region.</p>
 </div>
 <div class="section level2">
 <h2 id="attribution-and-responsible-access">Attribution and responsible access<a class="anchor" aria-label="anchor" href="#attribution-and-responsible-access"></a>

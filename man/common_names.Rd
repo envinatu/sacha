@@ -36,7 +36,7 @@ grouped by language. Names in Spanish are listed without a language label.
 Names in other languages are followed by the language in parentheses, and
 names without a declared language are marked with a localized
 "unspecified" label. Language codes reported by the source are normalized
-for Spanish (\code{"es"}) and Kichwa (\code{"kichwa"}, \code{"castellano-kichwa"}); other
+for Spanish (\code{"es"}); other
 codes are kept as reported, with the country appended when available.
 Groups are separated by \code{"; "}.
 }

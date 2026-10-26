@@ -6,44 +6,56 @@
 \title{Save traceable GBIF occurrences for local mapping}
 \usage{
 gbif_save_occurrences(
-  species,
-  kml = NULL,
+  species = NULL,
+  crop_vector = NULL,
   crop_area = NULL,
   crop_box = NULL,
-  limit = 100000L,
+  limit = 50000L,
   directory = getwd(),
-  overwrite = TRUE
+  overwrite = TRUE,
+  taxon_id = NULL,
+  generate_doi = FALSE,
+  date = NULL
 )
 
 gbif_save_ocurrences(
-  species,
-  kml = NULL,
+  species = NULL,
+  crop_vector = NULL,
   crop_area = NULL,
   crop_box = NULL,
-  limit = 100000L,
+  limit = 50000L,
   directory = getwd(),
-  overwrite = TRUE
+  overwrite = TRUE,
+  taxon_id = NULL,
+  generate_doi = FALSE,
+  date = NULL
 )
 }
 \arguments{
 \item{species}{A binomial scientific name, for example \code{"Bidens andicola"}.
 GBIF must resolve it as an exact species-level name; approximate or
-higher-rank matches are not used.}
+higher-rank matches are not used. Supply exactly one of \code{species} or
+\code{taxon_id}.}
 
-\item{kml}{Optional path to a \code{.kml} file used to restrict occurrences to a
-geographic area. It cannot be combined with \code{crop_area}.}
+\item{crop_vector}{Optional path to a \code{.kml} or \code{.shp} file used to restrict
+occurrences to a geographic area. The file name provides the place name
+used for the caption and export directory. It cannot be combined with
+\code{crop_area}.}
 
 \item{crop_area, crop_box}{Geographic crop selectors shared with
 \code{\link[=gbif_map_crop]{gbif_map_crop()}}. They use the same area resolution, WGS 84 coordinate
 order, label, and overlap rules. Here they filter the records being saved
-and determine the \code{Place} subdirectory. \code{crop_area} cannot be combined
-with \code{kml}; \code{crop_box} can be used alone or with either boundary input.}
+and determine the \code{Place} subdirectory. A country area uses GBIF's
+standardized \code{country} predicate when its two-letter code is available;
+\code{crop_box} is sent as a WGS 84 spatial predicate. \code{crop_area} cannot be
+combined with \code{crop_vector}; \code{crop_box} can be used alone or with either
+boundary input.}
 
-\item{limit}{Maximum number of georeferenced records requested from GBIF
-before spatial filtering, as a positive integer from \code{1} to \code{100000}.
-Defaults to \code{100000}, as in \code{\link[=gbif_map_crop]{gbif_map_crop()}}. Set to \code{NULL} to retrieve
-all available records. A saved crop may contain fewer records than a
-finite \code{limit} because the limit is applied before spatial filtering.}
+\item{limit}{Maximum number of georeferenced records retained after the
+spatial filter, as a positive integer from \code{1} to \code{100000}. Defaults to
+\code{50000}, as in \code{\link[=gbif_map_crop]{gbif_map_crop()}}. Set to \code{NULL} with \code{generate_doi = TRUE} to
+retrieve all available matching records. For high-volume species, use a
+local export or narrow the query with \code{date} or a spatial selector.}
 
 \item{directory}{Base output directory. As in \code{\link[=gbif_map_crop]{gbif_map_crop()}}, the
 function creates \code{sacha_exports/Family_Genus_species}; cropped exports
@@ -52,41 +64,83 @@ are placed in its \code{Place} subdirectory. Defaults to \code{\link[=getwd]{get
 \item{overwrite}{Logical. If \code{TRUE} (default), existing occurrence,
 metadata, and boundary files for this export may be replaced; \code{FALSE}
 prevents replacement.}
+
+\item{taxon_id}{A COL XR alphanumeric species usage key, such as \code{"Q2M4"}.
+GBIF verifies that the key identifies one species-level taxon. Supply
+exactly one of \code{taxon_id} or \code{species}.}
+
+\item{generate_doi}{Logical. If \code{TRUE}, request and wait for a registered GBIF
+occurrence download, and record its DOI in \code{metadata.json}. This requires
+GBIF account credentials. If \code{FALSE} (default), retrieve records with the
+faster occurrence-search API and save the returned records without waiting
+for a DOI.}
+
+\item{date}{Optional ISO date or date range such as
+\code{"2020-01-01,2021-01-01"}. It filters occurrence datasets by their GBIF
+registry creation date (\code{createdDate}), then selects records from those
+datasets. It does not filter the date an occurrence was observed.}
 }
 \value{
 A named character vector with paths to the saved occurrence,
 metadata, and, for cropped exports, boundary files.
 }
 \description{
-Resolves \code{species} as an exact, species-level GBIF name in the configured
-checklist (COL Extended Release by default) and retrieves georeferenced
-records using the resulting taxon key and the same checklist key. By
-default, up to 100,000 records are retrieved. Set \code{limit = NULL} to retrieve
-all available records. A finite limit is applied before any geographic
-crop. The function
-can optionally restrict records to a KML boundary, a named geographic area,
-or a WGS 84 bounding box. It saves the returned GBIF fields, machine-readable
-metadata including the exact name match and taxon key, and, for a crop, the
-corresponding WGS 84 boundary. Full-extent exports can be used offline with
+Supply exactly one of \code{species} or \code{taxon_id}. GBIF resolves a supplied name
+as an exact species-level name or validates a COL XR usage key as an exact
+species-level taxon, then retrieves georeferenced records using that taxon
+key and the same checklist key. By default, the fast occurrence-search API
+retrieves up to 50,000 records without waiting for a registered download.
+Set \code{generate_doi = TRUE} to wait for a registered download and include its
+official DOI in \code{metadata.json}; this requires \code{GBIF_USER}, \code{GBIF_PWD}, and
+\code{GBIF_EMAIL} credentials. With \code{generate_doi = TRUE}, set \code{limit = NULL} to save
+all available records; otherwise increase the finite limit up to 100,000.
+For high-volume species such as \verb{Amaranthus hybridus}, prefer a local export
+or narrow the query with \code{date} or spatial filters. Country areas are queried
+with GBIF's standardized country predicate; \code{crop_vector} and \code{crop_box} are
+converted to a common WGS 84 geometry and sent as a spatial predicate. The
+exact package boundary is applied to returned records before \code{limit}, so a
+crop receives up to the requested number of matching occurrences. If a
+vector geometry exceeds GBIF's query-size limit, its bounding box is used as
+a candidate filter and the exact geometry is applied locally. The function can optionally restrict
+records to a KML or ESRI Shapefile boundary, a named geographic area, or a
+WGS 84 bounding box. It saves the returned GBIF fields and machine-readable
+metadata including the exact taxon match and COL XR taxon key, and, for a
+crop, the corresponding WGS 84 boundary. Full-extent exports can be used offline with
 \code{source = "local"} in \code{\link[=gbif_map]{gbif_map()}} or \code{\link[=gbif_map_crop]{gbif_map_crop()}}. A cropped export can
 be used with \code{\link[=gbif_map_crop]{gbif_map_crop()}} by selecting \code{source = "local"},
 \code{local_export = "crop"}, and the same crop arguments used when saving it.
 When both functions use the same taxon, occurrence set, and crop selectors,
 their saved occurrence records are interchangeable as local input. The
-default limit here is 100,000; use \code{limit = NULL} when the complete available
-occurrence set is required.
+default limit is 50,000; \code{limit = NULL} requires \code{generate_doi = TRUE} to save
+the complete available occurrence set. The default fast search saves the returned
+records without waiting for a registered GBIF download. Set \code{generate_doi = TRUE} to wait for that download and record its DOI in the metadata.
+In either form, the accepted COL XR species name determines the output
+directory, so supplying a taxon by name or by \code{taxon_id} uses the same path.
 }
 \details{
 Full-extent records are saved to
 \code{sacha_exports/Family_Genus_species}; cropped records are saved to
 \code{sacha_exports/Family_Genus_species/Place}, where \code{Place} is derived from
-the KML file name, the resolved geographic area, or the crop-box label (or
+the crop-vector file name, the resolved geographic area, or the crop-box label (or
 its coordinates when no label is supplied).
+
+GBIF uses the Catalogue of Life Extended Release (COL XR) as the taxonomic
+reference for occurrence downloads. By downloading the data, you
+acknowledge GBIF's \href{https://www.gbif.org/terms/data-user}{data-use agreement}.
+When citing or referring to registered downloads (\code{generate_doi = TRUE}), follow GBIF's
+\href{https://www.gbif.org/citation-guidelines#occDataDownload}{citation guidelines}
+and include the DOI assigned to that specific download in every publication.
+
+Configure the GBIF account credentials in the current R session with
+\code{Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password", GBIF_EMAIL = "your_account_email")}. To keep them available in future
+sessions, add the same three variables to your personal \verb{~/.Renviron} file
+and restart R. Do not share or publish that file.
 }
 \examples{
 \dontrun{
 gbif_save_occurrences("Bidens andicola")
-gbif_save_occurrences("Bidens andicola", kml = "Cotopaxi.kml")
+gbif_save_occurrences("Bidens andicola", crop_vector = "Cotopaxi.kml")
+gbif_save_occurrences(taxon_id = "Q2M4")
 gbif_save_occurrences(
   "Bidens andicola",
   crop_box = c(-75, -10, -70, -5, "study area"),

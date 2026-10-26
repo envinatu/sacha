@@ -22,7 +22,7 @@ Imports:
     knitr,
     leaflet,
     leaflet.extras,
-    rgbif,
+    rgbif (>= 3.9.0),
     rnaturalearth,
     sf,
     yaml,

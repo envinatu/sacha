@@ -182,18 +182,27 @@
   if (is.null(kml)) .sacha_spatial_map_style$defaults$crop_kml else kml
 }
 
+.sacha_spatial_map_style_retrieval_date <- function(retrieved_at) {
+  value <- .sacha_spatial_scalar(retrieved_at, default = NA_character_)
+  if (is.na(value)) return(as.Date(NA_character_))
+  date_text <- substr(value, 1L, 10L)
+  date <- suppressWarnings(as.Date(date_text, format = "%Y-%m-%d"))
+  if (is.na(date) || !identical(format(date, "%Y-%m-%d"), date_text)) {
+    return(as.Date(NA_character_))
+  }
+  date
+}
+
 .sacha_spatial_map_style_report <- function(variant, mode, frame, species,
-                                            language, place = NULL) {
+                                            language, place = NULL,
+                                            retrieved_at = NULL) {
   if (!variant %in% c("complete", "crop")) {
     stop("`variant` must be 'complete' or 'crop'.", call. = FALSE)
   }
-  size <- if (identical(mode, "static")) {
-    .sacha_spatial_map_style_markdown_size(mode, frame)
-  } else {
-    NULL
-  }
   display_name <- .sacha_spatial_display_name(species, markdown = TRUE)
-  date <- format(Sys.Date(), "%d-%m-%Y")
+  caption_date <- .sacha_spatial_map_style_retrieval_date(retrieved_at)
+  if (is.na(caption_date)) caption_date <- Sys.Date()
+  date <- format(caption_date, "%d-%m-%Y")
   captions <- if (identical(variant, "crop")) {
     list(
       full = sprintf(.sacha_spatial_label("map_caption_crop", language),
@@ -211,11 +220,13 @@
   if (identical(variant, "crop")) id_parts <- c(id_parts, variant)
   id_parts <- c(id_parts, .sacha_spatial_slug(species))
   if (!is.null(place) && nzchar(place)) id_parts <- c(id_parts, .sacha_spatial_slug(place))
-  c(captions, list(
-    id = paste(id_parts[nzchar(id_parts)], collapse = "-"),
-    width = if (is.null(size)) NULL else size[["width"]],
-    height = if (is.null(size)) NULL else size[["height"]]
-  ))
+  report <- c(captions, list(id = paste(id_parts[nzchar(id_parts)], collapse = "-")))
+  if (identical(mode, "static")) {
+    size <- .sacha_spatial_map_style_markdown_size(mode, frame)
+    report$width <- size[["width"]]
+    report$height <- size[["height"]]
+  }
+  report
 }
 
 .sacha_spatial_map_style_render_caption <- function(map, report) {
@@ -252,35 +263,50 @@
   boundary <- world[matched, , drop = FALSE]
   if (!nrow(boundary)) {
     stop(sprintf(
-      "No public %s boundary matched `crop_area = %s`. Use an accepted area name, code, `crop_box`, or `kml`.",
+      "No public %s boundary matched `crop_area = %s`. Use an accepted area name, code, `crop_box`, or `crop_vector`.",
       settings$source, sQuote(crop_area)
     ), call. = FALSE)
   }
   place_field <- settings$place_field
   place <- if (place_field %in% names(boundary)) as.character(boundary[[place_field]][1]) else crop_area
-  list(boundary = boundary, bbox = sf::st_bbox(boundary), place = place)
+  country_code <- if ("iso_a2" %in% names(boundary)) {
+    toupper(trimws(as.character(boundary$iso_a2[1L])))
+  } else {
+    NA_character_
+  }
+  if (is.na(country_code) || !grepl("^[A-Z]{2}$", country_code)) {
+    country_code <- NULL
+  }
+  list(
+    boundary = boundary,
+    bbox = sf::st_bbox(boundary),
+    place = place,
+    country_code = country_code
+  )
 }
 
-.sacha_spatial_map_crop_boundary <- function(kml = NULL, crop_area = NULL,
+.sacha_spatial_map_crop_boundary <- function(crop_vector = NULL, crop_area = NULL,
                                              language = NULL) {
-  selectors <- c(kml = !is.null(kml), crop_area = !is.null(crop_area))
+  selectors <- c(crop_vector = !is.null(crop_vector), crop_area = !is.null(crop_area))
   if (sum(selectors) > 1L) {
-    stop("Specify only one of `kml` or `crop_area`.", call. = FALSE)
+    stop("Specify only one of `crop_vector` or `crop_area`.", call. = FALSE)
   }
   if (!any(selectors)) {
-    kml <- .sacha_spatial_map_style_crop_kml()
-    if (is.null(kml)) {
-      stop("Specify `kml`, `crop_area`, or `crop_box`.", call. = FALSE)
+    crop_vector <- .sacha_spatial_map_style_crop_kml()
+    if (is.null(crop_vector)) {
+      stop("Specify `crop_vector`, `crop_area`, or `crop_box`.", call. = FALSE)
     }
   }
-  result <- if (!is.null(kml)) {
-    .sacha_spatial_kml_boundary(kml)
+  result <- if (!is.null(crop_vector)) {
+    .sacha_spatial_crop_vector_boundary(crop_vector)
   } else {
     .sacha_spatial_map_style_crop_area_boundary(crop_area)
   }
   place <- result$place
   attr(result$boundary, "sacha_place") <- place
-  c(result, list(kml = kml, crop_area = crop_area))
+  result$crop_vector <- crop_vector
+  result$crop_area <- crop_area
+  result
 }
 
 .sacha_spatial_map_style_interval <- function(centre, span, lower, upper) {
@@ -439,7 +465,7 @@
   if (length(candidates)) max(candidates) else min(nice_steps)
 }
 
-.sacha_spatial_static_scale_grob <- function(frame, style) {
+.sacha_spatial_static_scale_grob <- function(frame, style, offset = NULL) {
   bbox <- frame$bbox
   lon_span_deg <- unname(bbox["xmax"] - bbox["xmin"])
   lat_centre <- mean(bbox[c("ymin", "ymax")])
@@ -456,8 +482,10 @@
     sprintf("%g m", nice_km * 1000)
   }
 
-  x0 <- grid::unit(style$legend_margin_cm + style$north_scale_pad_x_cm, "cm")
-  y0 <- grid::unit(style$legend_margin_cm + style$north_scale_pad_y_cm, "cm")
+  offset_x <- if (is.null(offset)) grid::unit(0, "cm") else offset$x
+  offset_y <- if (is.null(offset)) grid::unit(0, "cm") else offset$y
+  x0 <- grid::unit(style$legend_margin_cm + style$north_scale_pad_x_cm, "cm") + offset_x
+  y0 <- grid::unit(style$legend_margin_cm + style$north_scale_pad_y_cm, "cm") + offset_y
   half <- grid::unit(bar_width_cm / 2, "cm")
   height <- grid::unit(style$scalebar_height_cm, "cm")
 
@@ -481,13 +509,16 @@
   list(grob = grob, label_grob = label_grob, width_cm = bar_width_cm, label = label)
 }
 
-.sacha_spatial_static_legend_grob <- function(entries, style, scale_info = NULL) {
+.sacha_spatial_static_legend_grob <- function(entries, style, scale_info = NULL,
+                                              offset = NULL) {
   key <- grid::unit(style$legend_key_size_cm, "cm")
   row_h <- grid::unit(style$legend_row_height_cm, "cm")
   pad_x <- grid::unit(style$legend_pad_x_cm, "cm")
   text_x0 <- pad_x + key + grid::unit(style$legend_text_gap_cm, "cm")
-  ox <- grid::unit(style$legend_margin_cm, "cm")
-  oy <- grid::unit(style$legend_margin_cm, "cm")
+  offset_x <- if (is.null(offset)) grid::unit(0, "cm") else offset$x
+  offset_y <- if (is.null(offset)) grid::unit(0, "cm") else offset$y
+  ox <- grid::unit(style$legend_margin_cm, "cm") + offset_x
+  oy <- grid::unit(style$legend_margin_cm, "cm") + offset_y
   radius <- style$legend_corner_radius_cm
 
   north_scale_block <- .sacha_spatial_static_north_scale_block_height(style)
@@ -588,10 +619,67 @@
     children[[length(children) + 1]] <- text_grob
   }
 
-  grid::gTree(
+  grob <- grid::gTree(
     children = do.call(grid::gList, children),
     gp = grid::gpar(fontsize = style$legend_font_size)
   )
+  list(grob = grob, width = box_width, height = box_height)
+}
+
+.sacha_spatial_static_legend_position <- function(position) {
+  choices <- c(
+    "bottomleft", "bottom", "bottomright", "right",
+    "topright", "top", "topleft", "left"
+  )
+  if (is.null(position)) return(choices[[1L]])
+  if (is.character(position) && length(position) == 1L && !is.na(position) &&
+      position %in% choices) {
+    return(position)
+  }
+  match.arg(
+    if (is.character(position) && length(position) == 1L && !is.na(position)) {
+      position
+    } else {
+      ""
+    },
+    choices
+  )
+}
+
+.sacha_spatial_static_legend_offset <- function(position, legend_size, style) {
+  shadow <- style$legend_shadow_rings * style$legend_shadow_step_cm
+  margin <- style$legend_margin_cm
+  shadow_offset <- style$legend_shadow_offset_cm
+  width <- legend_size$width
+  height <- legend_size$height
+  horizontal <- if (grepl("left$", position)) {
+    "left"
+  } else if (grepl("right$", position)) {
+    "right"
+  } else {
+    "center"
+  }
+  vertical <- if (startsWith(position, "top")) {
+    "top"
+  } else if (startsWith(position, "bottom")) {
+    "bottom"
+  } else {
+    "center"
+  }
+  x <- switch(
+    horizontal,
+    left = grid::unit(shadow, "cm"),
+    center = (grid::unit(1, "npc") - width) / 2 - grid::unit(margin, "cm"),
+    right = grid::unit(1, "npc") - width - grid::unit(2 * margin + shadow, "cm")
+  )
+  y <- switch(
+    vertical,
+    bottom = grid::unit(shadow + shadow_offset, "cm"),
+    center = (grid::unit(1, "npc") - height) / 2 - grid::unit(margin - shadow_offset, "cm"),
+    top = grid::unit(1, "npc") - height -
+      grid::unit(2 * margin + shadow - shadow_offset, "cm")
+  )
+  list(x = x, y = y)
 }
 
 .sacha_spatial_static_scale_compass_legend <- function(map, context) {
@@ -603,35 +691,62 @@
     context$colour, context$boundary, context$place, style, species_label, language
   )
   scale_info <- .sacha_spatial_static_scale_grob(context$frame, style)
-  legend_grob <- .sacha_spatial_static_legend_grob(entries, style, scale_info)
-
-  composition <- grid::gTree(
-    children = grid::gList(legend_grob, scale_info$grob)
-  )
+  legend_info <- .sacha_spatial_static_legend_grob(entries, style, scale_info)
+  position <- context$static_legend_position %spatial||% "bottomleft"
+  offset <- NULL
+  if (!identical(position, "bottomleft")) {
+    offset <- .sacha_spatial_static_legend_offset(position, legend_info, style)
+    scale_info <- .sacha_spatial_static_scale_grob(context$frame, style, offset)
+    legend_info <- .sacha_spatial_static_legend_grob(
+      entries, style, scale_info, offset
+    )
+  }
+  children <- list(legend_info$grob, scale_info$grob)
+  if (requireNamespace("ggspatial", quietly = TRUE)) {
+    compass <- ggspatial::GeomNorthArrow[["draw_panel"]](
+      data = data.frame(which_north = "true", location = "bl"),
+      panel_params = list(
+        x_range = context$frame$bbox[c("xmin", "xmax")],
+        y_range = context$frame$bbox[c("ymin", "ymax")],
+        crs = sf::st_crs(style$crs %spatial||% 4326)
+      ),
+      coordinates = map$coordinates,
+      height = grid::unit(style$compass_height_cm, "cm"),
+      width = grid::unit(style$compass_width_cm, "cm"),
+      pad_x = grid::unit(
+        style$legend_margin_cm + style$north_scale_pad_x_cm, "cm"
+      ),
+      pad_y = grid::unit(
+        style$legend_margin_cm + style$north_scale_pad_y_cm +
+          style$scalebar_height_cm + style$north_scale_gap_cm,
+        "cm"
+      ),
+      rotation = NULL,
+      style = ggspatial::north_arrow_fancy_orienteering(
+        line_col = style$legend_text_colour,
+        text_col = style$legend_text_colour,
+        text_size = 6
+      )
+    )
+    offset_x <- if (is.null(offset)) grid::unit(0, "cm") else offset$x
+    offset_y <- if (is.null(offset)) grid::unit(0, "cm") else offset$y
+    compass$vp$x <- grid::unit(
+      style$legend_margin_cm + style$north_scale_pad_x_cm +
+        style$compass_width_cm / 2,
+      "cm"
+    ) + offset_x
+    compass$vp$y <- grid::unit(
+      style$legend_margin_cm + style$north_scale_pad_y_cm +
+        style$scalebar_height_cm + style$north_scale_gap_cm +
+        style$compass_height_cm / 2,
+      "cm"
+    ) + offset_y
+    children[[length(children) + 1L]] <- compass
+  }
+  composition <- grid::gTree(children = do.call(grid::gList, children))
   map <- map + ggplot2::annotation_custom(
     composition, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf
   )
-
-  if (requireNamespace("ggspatial", quietly = TRUE)) {
-    map <- map +
-      ggspatial::annotation_north_arrow(
-        location = "bl",
-        which_north = "true",
-        style = ggspatial::north_arrow_fancy_orienteering(
-          line_col = style$legend_text_colour,
-          text_col = style$legend_text_colour,
-          text_size = 6
-        ),
-        height = grid::unit(style$compass_height_cm, "cm"),
-        width = grid::unit(style$compass_width_cm, "cm"),
-        pad_x = grid::unit(style$legend_margin_cm + style$north_scale_pad_x_cm, "cm"),
-        pad_y = grid::unit(
-          style$legend_margin_cm + style$north_scale_pad_y_cm +
-            style$scalebar_height_cm + style$north_scale_gap_cm,
-          "cm"
-        )
-      )
-  }
   map
 }
 
@@ -686,8 +801,12 @@
 )
 
 .sacha_spatial_static_map <- function(occurrences, colour, zoom, boundary = NULL, bbox = NULL,
-                                      language = NULL, legend_place = NULL) {
+                                      language = NULL, legend_place = NULL,
+                                      static_legend_position = "bottomleft") {
   .sacha_spatial_require(c("ggplot2", "rnaturalearth", "sf"))
+  static_legend_position <- .sacha_spatial_static_legend_position(
+    static_legend_position
+  )
   language <- if (is.null(language)) "es" else language
   style <- .sacha_spatial_map_style_variant("static", boundary)
   frame <- .sacha_spatial_map_style_frame(
@@ -725,7 +844,8 @@
   map <- .sacha_spatial_map_style_apply_adornments(
     map, "static",
     list(occurrences = occurrences, colour = colour, boundary = boundary, bbox = frame$bbox,
-         frame = frame, variant = frame$variant, place = place, language = language)
+         frame = frame, variant = frame$variant, place = place, language = language,
+         static_legend_position = static_legend_position)
   )
   attr(map, "sacha_map_frame") <- frame
   map
@@ -801,8 +921,7 @@
                                       attributionControl = style$attribution_control,
                                       minZoom = style$minimum_zoom,
                                       worldCopyJump = style$world_copy_jump,
-                                      zoomSnap = 0),
-    width = "100%"
+                                      zoomSnap = 0)
   )
 
   map <- leaflet::setMaxBounds(map, lng1 = -180, lat1 = -90, lng2 = 180, lat2 = 90)

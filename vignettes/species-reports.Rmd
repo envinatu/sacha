@@ -7,114 +7,145 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, eval=FALSE}
 library(sacha)
 ```
 
-# Combined reports
+# Start with a taxonomic report
 
-Report functions combine existing accessors. They preserve each section's format and rules, so users can start with a standard report and build a custom composition when they need control over its content or order.
+Report functions combine existing accessors. Begin with the ChecklistBank report, which uses the configured web service and does not require local occurrence or image files:
 
-The code chunks in this vignette are not executed when it is built: some require external services, while others require locally saved files. No credentials, user-specific file paths, or downloads are included.
-
-# Choosing a report
-
-| Function | Sections | Source considerations |
-|:-----------------------|:-----------------------|:-----------------------|
-| `sacha_clb_report()` | Accepted name, first publication, indexations, common names, classification, synonyms and combinations, documented areas, and references. | ChecklistBank sections retain the configured web behavior. |
-| `sacha_spatial_report()` | Documented areas and a cropped GBIF map. | `language` applies to the area text; additional arguments are passed to `gbif_map_crop_md()`. |
-| `sacha_report()` | Name, first publication, images, indexations, common names, classification, synonymy, areas, GBIF map, and references. | `source = "local"` is the default for images and maps; `source = "web"` requests both services online. ChecklistBank sections continue to use their web source. |
-
-For `sacha_report()`, `source = "local"` requires iNaturalist and GBIF files that match the species and filters. If the cropped map requires a boundary, provide one or configure it in advance. ChecklistBank sections may still query the web even when local files are used, so the report is not fully offline.
-
-```{r, eval=FALSE, results='asis', echo=FALSE}
-sacha_clb_report("Bidens andicola", language = "en")
+```{r, eval=FALSE, results='asis', echo=TRUE}
+sacha_clb_report("Bidens andicola")
 ```
 
-```{r, eval=FALSE, results='asis', echo=FALSE}
-sacha_spatial_report(
+The report contains the accepted name, first publication, indexations, common names, classification, synonyms and combinations, documented areas, and references. Its sections follow a fixed order and retain the behavior of their individual accessors.
+
+# Reports that include maps and photographs
+
+| Function | Sections | Source behavior |
+|:-----------------------|:-----------------------|:-----------------------|
+| `sacha_clb_report()` | Taxonomic and bibliographic sections, including documented areas. | Uses the configured ChecklistBank service. |
+| `sacha_spatial_report()` | Documented areas and a cropped GBIF map. | Queries the configured ChecklistBank service and passes map options to `gbif_map_crop_md()`. |
+| `sacha_report()` | Taxonomic data, iNaturalist photographs, documented areas, a cropped GBIF map, and references. | `source = "web"` queries iNaturalist and GBIF; `source = "local"` reads saved files. ChecklistBank sections continue to use their configured service. |
+
+For a web report with a regional map, provide a crop area. The iNaturalist section uses the same observer filter as the image examples:
+
+```{r, eval=FALSE, results='asis', echo=TRUE}
+sacha_report(
   "Bidens andicola",
-  crop_box = c(-180, -90, 180, 90, "Global extent"),
-  source = "local",
-  local_export = "species",
-  distribution = "global",
-  mode = "static"
+  source = "web",
+  user_id = "marceloamores",
+  crop_area = "Ecuador"
 )
 ```
 
-```{r, eval=FALSE, results='asis', echo=FALSE}
+`sacha_spatial_report()` is useful when the document needs only documented areas and a GBIF map:
+
+```{r, eval=FALSE, results='asis', echo=TRUE}
+sacha_spatial_report("Bidens andicola", crop_area = "Ecuador")
+```
+
+# Save data before using a local report
+
+The default source for `sacha_report()` is local. Save the image records and the cropped GBIF export first, using the same species, observer, crop, and base directory that the report will use.
+
+```{r, eval=FALSE}
+inat_save_images(
+  "Bidens andicola",
+  user_id = "marceloamores",
+  directory = "sacha_data"
+)
+
+gbif_save_occurrences(
+  "Bidens andicola",
+  crop_area = "Ecuador",
+  directory = "sacha_data"
+)
+```
+
+Then read the saved records in the report. `local_export = "crop"` selects the export saved for Ecuador. The taxonomic sections still query ChecklistBank, so a local report is not fully offline.
+
+```{r, eval=FALSE, results='asis', echo=TRUE}
 sacha_report(
   "Bidens andicola",
   source = "local",
-  crop_box = c(-180, -90, 180, 90, "Global extent"),
-  local_export = "species",
-  distribution = "global",
-  mode = "static"
+  user_id = "marceloamores",
+  crop_area = "Ecuador",
+  local_export = "crop",
+  directory = "sacha_data"
 )
 ```
 
-The `_md` reports emit document markup. In Quarto or R Markdown, `results='asis'` lets the renderer process that markup and its figures. Figure options and cross-references are covered in the [maps](spatial-maps.html) and [images](inaturalist-images.html) vignettes.
+# Build a custom report from accessors
 
-# Shared values and explicit arguments
+Use the `_md` accessors when you want to choose the sections or their order. This example combines taxonomic data, locally saved iNaturalist images and GBIF records, and references. Run it in a Quarto or R Markdown chunk with `results='asis'`.
 
-`sacha_arg_configure()` sets shared arguments for subsequent calls. An argument supplied directly to a report takes precedence over its shared value. Each section's arguments retain the meaning and accepted values of the underlying function; `?sacha_report` lists the forwarded names, and the corresponding accessors document how to use them.
+```{r, eval=FALSE, results='asis', echo=TRUE}
+sc_full_name_md("Bidens andicola")
+classification_md("Bidens andicola", language = "es")
+common_names_md("Bidens andicola", language = "es")
+inat_images_md(
+  "Bidens andicola",
+  user_id = "marceloamores",
+  source = "local",
+  directory = "sacha_data"
+)
+locations_md("Bidens andicola", language = "es")
+gbif_map_crop_md(
+  "Bidens andicola",
+  crop_area = "Ecuador",
+  source = "local",
+  local_export = "crop",
+  directory = "sacha_data"
+)
+references_sp_md("Bidens andicola", save_bib = TRUE, directory = "sacha_data")
+```
+
+A focused account can omit unrelated sections or add function-specific options such as `rank`, `identifier`, `save_bib`, `mode`, and `fig_width`. Each accessor's help page lists the options it accepts.
+
+# Shared and module-specific configuration
+
+Use `sacha_configure()` for module settings and shared source or directory defaults. Here, labels are set to Spanish, iNaturalist uses a larger default image, and local files are read from `sacha_data`:
+
+```{r, eval=FALSE}
+sacha_configure(
+  clb = list(language = "es"),
+  inat = list(language = "es", default_image_size = "large"),
+  spatial = list(language = "es"),
+  source = "local",
+  directory = "sacha_data"
+)
+```
+
+Use `sacha_arg_configure()` for shared function arguments such as the iNaturalist observer and crop. An argument supplied in a function call takes precedence over its configured value.
 
 ```{r, eval=FALSE}
 sacha_arg_configure(
-  species = "Bidens andicola",
-  number_observations = 1,
-  image_size = "medium",
-  source = "local"
+  user_id = "marceloamores",
+  crop_area = "Ecuador",
+  local_export = "crop"
 )
 
-sacha_report(crop_box = c(-180, -90, 180, 90, "Global extent"))
+sacha_report("Bidens andicola")
+sacha_report("Bidens andicola", source = "web")
+```
+
+The first report uses the configured local source and directory. The second overrides the source for its iNaturalist and GBIF sections. To adjust one request without changing the session, pass settings such as `language = "es"`, `image_size = "large"`, `limit = 1000`, or `mode = "static"` directly to the relevant function. `sacha_clear_cache()` resets configuration and shared argument values but does not delete saved exports.
+
+# Application with pacha
+
+A Quarto application combining `sacha` and `pacha` is presented in the book [*Plantas susceptibles de uso sostenible en la zona andina de la provincia de Cotopaxi, Ecuador*](https://envinatu.github.io/envyura/). For a local-source `sacha_report()`, prepare the matching image and GBIF exports first; the ChecklistBank sections still use their configured service.
+
+```{r, eval=FALSE, results='asis', echo=TRUE}
 sacha_report(
-  species = "Bidens andicola",
-  source = "web",
-  crop_box = c(-180, -90, 180, 90, "Global extent")
-)
-
-sacha_clear_cache()
-```
-
-The first report inherits the configured values. In the second, explicit arguments replace shared values with the same names. `sacha_clear_cache()` resets configuration and removes shared values, but does not delete saved files or reset iNaturalist download-volume and delay controls.
-
-# Advanced section composition
-
-When the standard order does not fit a report's purpose, Markdown accessors can be combined directly. For example, a species account can lead with classification, limit the images, include a full-extent map, and end with references. This approach also makes it possible to omit sections that are not relevant.
-
-```{r, eval=FALSE, results='asis', echo=FALSE}
-species <- "Bidens andicola"
-
-sc_full_name_md(species)
-classification_md(species, language = "en")
-common_names_md(species, language = "en")
-inat_images_md(
-  species,
+  "Bidens andicola",
   source = "local",
-  number_observations = 1,
-  ncol = 1
+  user_id = "marceloamores",
+  crop_area = "Ecuador",
+  local_export = "crop",
+  directory = "sacha_data"
 )
-locations_md(species, language = "en")
-gbif_map_md(
-  species,
-  source = "local",
-  mode = "static",
-  limit = 500
-)
-references_sp_md(species, language = "en")
+
+pacha_report("Bidens andicola")
 ```
-
-Custom compositions should account for source-specific behavior: `source = "local"` in iNaturalist and GBIF requires prepared files; ChecklistBank functions and `locations()` do not accept that argument and follow their own query rules. Each section is rendered in call order, so map and image calls should be placed in a chunk configured for `asis` output.
-
-More focused outputs can be assembled without querying every module. For example, a nomenclatural note can combine a name, publication, synonyms, and references; a geographic account can pair `locations_md()` with `gbif_map_crop_md()`; and a photographic plate can use `inat_images_md()` without a map. Keep filters and parameters that affect record selection, licensing, or geographic scale explicit so the composition remains interpretable and reproducible.
-
-# Rendering practices
-
-- For repeated renders, use local sources for images and maps after validating and archiving the required files.
-- Avoid repeating online queries for each output format of the same book; retrieve or save the data once and reuse it.
-- Keep provenance metadata, dates, and licenses with downloaded files.
-- Use `results='asis'` in chunks that print Markdown generated by the package.
-- Define cross-references from the identifiers produced by the functions and confirm them in the rendered document.
-
-ChecklistBank, GBIF, and iNaturalist policies and availability may change. Consult each provider's documentation before planning large-scale retrieval or redistributing records and images.

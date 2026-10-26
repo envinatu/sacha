@@ -10,19 +10,20 @@ inat_images(
   user_id = NULL,
   number_observations = 1L,
   observation_id = NULL,
-  image_size = c(.sacha_inat_defaults$default_image_size, setdiff(c("medium", "large",
-    "original", "small", "square"), .sacha_inat_defaults$default_image_size)),
+  image_size = NULL,
   source = c("web", "local"),
   verify_local = FALSE,
-  images_directory = .sacha_inat_defaults$default_images_directory,
-  quality_grade = .sacha_inat_defaults$default_quality_grade,
+  directory = getwd(),
+  quality_grade = NULL,
   place_id = NULL,
-  catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
-  language = .inat_language_choices(preferred = .sacha_inat_defaults$language),
+  catalogue_dataset = NULL,
+  language = NULL,
   observer_name = NULL,
   save_images = FALSE,
+  include_auxiliary = FALSE,
   export_comp = FALSE,
-  refresh = FALSE
+  refresh = FALSE,
+  taxon_id = NULL
 )
 
 inat_images_md(
@@ -30,27 +31,30 @@ inat_images_md(
   user_id = NULL,
   number_observations = 1L,
   observation_id = NULL,
-  image_size = c(.sacha_inat_defaults$default_image_size, setdiff(c("medium", "large",
-    "original", "small", "square"), .sacha_inat_defaults$default_image_size)),
+  image_size = NULL,
   source = c("web", "local"),
   verify_local = FALSE,
-  images_directory = .sacha_inat_defaults$default_images_directory,
-  quality_grade = .sacha_inat_defaults$default_quality_grade,
+  directory = getwd(),
+  quality_grade = NULL,
   place_id = NULL,
-  catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
-  language = .inat_language_choices(preferred = .sacha_inat_defaults$language),
+  catalogue_dataset = NULL,
+  language = NULL,
   observer_name = NULL,
   save_images = FALSE,
+  include_auxiliary = FALSE,
   export_comp = FALSE,
   refresh = FALSE,
   ncol = 2L,
   word_subfigure_width = "3in",
-  latex_subfigure_width = "86\%"
+  latex_subfigure_width = "86\%",
+  taxon_id = NULL
 )
 }
 \arguments{
 \item{species}{Optional scientific name, normally written as "Genus species".
-Supply either species or observation_id.}
+It is matched exactly (case-insensitive) to a species-rank taxon. Supply
+either \code{species} or \code{taxon_id}; \code{observation_id} may be used alone or with
+either selector.}
 
 \item{user_id}{Optional iNaturalist login used to restrict a species search.
 NULL includes observations from all users.}
@@ -59,37 +63,41 @@ NULL includes observations from all users.}
 observations to retrieve; defaults to 1.}
 
 \item{observation_id}{Optional numeric observation identifier or vector.
-When supplied with species, each observation is checked against that
-taxon. When supplied alone, all IDs must refer to one taxon.}
+When supplied with \code{species} or \code{taxon_id}, each observation is checked
+against that taxon. When supplied alone, all IDs must refer to one taxon.}
 
-\item{image_size}{Image variant: medium (default), large, original, small,
-or square.}
+\item{image_size}{Image variant: \code{"medium"}, \code{"large"}, \code{"original"},
+\code{"small"}, or \code{"square"}. When omitted, the function uses the configured
+image size; for \code{inat_images()} and \code{inat_images_md()} this is
+\code{default_image_size}, initially \code{"medium"}. \code{inat_save_images()} uses
+\code{default_save_image_size}, also initially \code{"medium"}.}
 
 \item{source}{"web" queries the API; "local" uses only images and metadata
 previously saved under
-\code{images_directory/sacha_exports/Family_Genus_species/inat}.}
+\code{directory/sacha_exports/Family_Genus_species/inat}.}
 
 \item{verify_local}{If TRUE, use a complete local archive first and query
 the API only when the archive cannot satisfy the request.}
 
-\item{images_directory}{Base directory under which the package creates or
+\item{directory}{Base directory under which the package creates or
 searches \code{sacha_exports/Family_Genus_species/inat}. Defaults to the
 working directory. Existing archives in the former \code{images} directory
 and earlier taxon-directory layout remain readable when using the default
 path.}
 
-\item{quality_grade}{iNaturalist observation quality filter. "research"
-(default) excludes casual observations; "needs_id" selects observations
-awaiting community identification. Valid API values are research,
-needs_id, and casual.}
+\item{quality_grade}{iNaturalist observation quality filter. When omitted,
+the configured \code{default_quality_grade} is used (initially \code{"research"}).
+Valid API values are \code{"research"}, \code{"needs_id"}, and \code{"casual"}.}
 
 \item{place_id}{Optional numeric iNaturalist place identifier.}
 
 \item{catalogue_dataset}{ChecklistBank dataset identifier used to obtain
-taxonomic authorship.}
+taxonomic authorship. When omitted, the configured dataset is used
+(initially \code{"3LXR"}).}
 
-\item{language}{Caption language. English is the default; Spanish and other
-installed inst/lang language files are also accepted.}
+\item{language}{Caption language. When omitted, the configured iNaturalist
+language is used (initially English). Spanish and other installed
+\code{inst/lang} language files are also accepted.}
 
 \item{observer_name}{Optional replacement for the iNaturalist observer name
 in captions.}
@@ -99,12 +107,21 @@ JSON metadata to \code{sacha_exports/Family_Genus_species/inat}, using the same
 layout as \code{\link[=inat_save_images]{inat_save_images()}}. Saved images are immediately available to
 \code{source = "local"} and \code{verify_local = TRUE}.}
 
+\item{include_auxiliary}{If TRUE, save all photographs associated with each
+selected observation when \code{save_images = TRUE}; otherwise, save only the
+primary photograph (default).}
+
 \item{export_comp}{If TRUE, save only the PNG composition to
 \code{sacha_exports/Family_Genus_species/inat}. This does not save source
 photographs or their metadata.
 The optional magick package is also needed for the composition preview.}
 
 \item{refresh}{If TRUE, bypass cached API results.}
+
+\item{taxon_id}{Optional positive iNaturalist taxon ID (numeric or numeric
+text) at species rank. It queries that taxon directly without resolving a
+name. Observations are checked against the exact taxon ID. Local searches
+use the saved taxon ID and retain the existing directory structure.}
 
 \item{ncol}{Number of columns in a Markdown panel and exported composition;
 default 2.}
@@ -120,8 +137,8 @@ invisibly returns the same metadata object after emitting figure markup for
 a Markdown document.
 }
 \description{
-Finds observations for a scientific name or observation identifier and
-returns their licensed photographs with taxonomic, observer, locality,
+Finds observations by scientific name, iNaturalist taxon ID, or observation
+identifier and returns their licensed photographs with taxonomic, observer, locality,
 source, and caption metadata. Results are ordered by observed date, newest
 first; records without an observed date follow dated records. The default
 search uses Research Grade
@@ -146,44 +163,30 @@ that media downloads above 5 GB per hour or 24 GB per day may result in a
 permanent block. The default session thresholds are 4.5 GB per hour and
 21.5 GB per day; they can be adjusted within the API's stated limits with
 \code{\link[=sacha_configure]{sacha_configure()}}. Accounting is per R session and cannot include
-downloads from other processes or machines using the same network. See
+downloads from other processes or machines using the same network. The API
+is intended for small or medium requests; use iNaturalist observation
+exports for bulk extraction. See
 \url{https://www.inaturalist.org/pages/api+recommended+practices} and
 \url{https://api.inaturalist.org/v2/docs/}.
+
+When omitted, \code{image_size}, \code{quality_grade}, \code{catalogue_dataset}, and
+\code{language} use the active iNaturalist settings from
+\code{sacha_configure(inat = ...)}. For \code{inat_images()} and \code{inat_images_md()},
+\code{image_size} follows \code{default_image_size}. An explicit function argument
+takes precedence over \code{sacha_arg_configure()}; a shared argument default
+takes precedence over the module setting.
 }
 \examples{
 \dontrun{
-inat_images("Bidens andicola")
-inat_images("Bidens andicola", user_id = "observer_login",
-            place_id = 1234, number_observations = 5,
-            image_size = "large", source = "web")
-inat_images("Bidens andicola", save_images = TRUE, export_comp = TRUE)
-inat_images("Bidens andicola", source = "local")
-inat_images("Bidens andicola", verify_local = TRUE, place_id = 1234)
-inat_images("Bidens andicola", quality_grade = "needs_id",
-            observer_name = "Observer name", language = "en",
-            images_directory = ".", refresh = TRUE,
-            catalogue_dataset = "3LXR")
-inat_images(observation_id = 123456, image_size = "original")
+inat_images("Bidens andicola", user_id = "marceloamores")
+
+inat_images("Bidens andicola", user_id = "marceloamores",
+            save_images = TRUE)
+inat_images("Bidens andicola", user_id = "marceloamores",
+            source = "local")
 }
 \dontrun{
-inat_images_md("Bidens andicola")
-inat_images_md("Bidens andicola", number_observations = 4,
-               source = "web", ncol = 2)
-inat_images_md("Bidens andicola", user_id = "observer_login",
-               place_id = 1234, number_observations = 3,
-               image_size = "large", language = "en")
-inat_images_md("Bidens andicola", observation_id = 123456,
-               source = "web", save_images = TRUE)
-inat_images_md("Bidens andicola", source = "local",
-               verify_local = FALSE, export_comp = TRUE, ncol = 2)
-inat_images_md("Bidens andicola", verify_local = TRUE,
-               number_observations = 2, save_images = TRUE,
-               word_subfigure_width = "3in",
-               latex_subfigure_width = "86\%")
-inat_images_md("Bidens andicola", quality_grade = "needs_id",
-               observer_name = "Observer name", images_directory = ".",
-               refresh = TRUE, catalogue_dataset = "3LXR",
-               export_comp = TRUE, ncol = 1)
+inat_images_md("Bidens andicola", user_id = "marceloamores")
 }
 }
 \references{

@@ -4,16 +4,13 @@
 \alias{save_clb}
 \title{Download a complete ChecklistBank dataset as a ColDP archive}
 \usage{
-save_clb(
-  dataset = .sacha_global_config$dataset,
-  directory = getwd(),
-  overwrite = TRUE
-)
+save_clb(dataset = NULL, directory = getwd(), overwrite = TRUE)
 }
 \arguments{
 \item{dataset}{ChecklistBank dataset key or alias, supplied as a character
-string or a whole number. Defaults to the dataset currently configured
-by sacha_configure().}
+string or a whole number. When omitted, uses the dataset configured with
+\code{sacha_configure(clb = ...)}. A value supplied directly takes precedence
+over a shared default from \code{sacha_arg_configure()}.}
 
 \item{directory}{Base directory under which \code{sacha_exports} is created for
 the archive and its download metadata. Defaults to the current working
@@ -33,7 +30,7 @@ neighbouring JSON file records the dataset key, download URL, response
 status, retrieval time, archive size and checksum.
 }
 \details{
-The default dataset is the one configured by sacha_configure().
+The default dataset is configured with \code{sacha_configure(clb = ...)}.
 Supply another ChecklistBank dataset key to download a different dataset
 without changing the package configuration.
 
@@ -56,9 +53,9 @@ save_clb(dataset = 313479)
 }
 }
 \references{
-ChecklistBank API guide: \url{https://github.com/CatalogueOfLife/backend/blob/master/API.md}.
-ChecklistBank dataset export endpoint:
-\url{https://api.checklistbank.org/dataset/{key}/export.zip}.
+ChecklistBank API guide: \url{https://www.catalogueoflife.org/tools/api}.
+ChecklistBank dataset export endpoint: \verb{/dataset/\{key\}/export.zip}, relative
+to \url{https://api.checklistbank.org/}.
 Catalogue of Life Data Package (ColDP) specification:
 \url{https://catalogueoflife.github.io/coldp/}.
 }

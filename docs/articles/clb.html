@@ -57,18 +57,21 @@
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
@@ -191,19 +194,19 @@ order, from higher ranks to the queried taxon. The <code>rank</code>
 argument requests a rank present in the record; rank names are specified
 in English and are not case-sensitive.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Bidens andicola"</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/sc_full_name.html">sc_full_name</a></span><span class="op">(</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/first_publicacion.html">first_publicacion</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/classification.html">classification</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/classification.html">classification</a></span><span class="op">(</span><span class="va">species</span>, rank <span class="op">=</span> <span class="st">"family"</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/sc_full_name.html">sc_full_name_md</a></span><span class="op">(</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/first_publicacion.html">first_publicacion_md</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/classification.html">classification_md</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sc_full_name.html">sc_full_name</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/first_publicacion.html">first_publicacion</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/classification.html">classification</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
 <p>Do not infer an unreported rank from another rank. In Markdown
 output, taxonomic names are linked when the source provides an
 identifier supported by the configured link template.</p>
+<p>The <code>_md</code> variants return formatted text for a document.
+These calls use the same default settings as the interactive
+functions:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sc_full_name.html">sc_full_name_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/first_publicacion.html">first_publicacion_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/classification.html">classification_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="vernacular-names-and-nomenclature">Vernacular names and nomenclature<a class="anchor" aria-label="anchor" href="#vernacular-names-and-nomenclature"></a>
@@ -229,13 +232,11 @@ author of that usage.</li>
 <p>These categories reflect the provider’s data model and records. The
 absence of a group does not by itself establish that names of that kind
 do not exist.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Bidens andicola"</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/common_names.html">common_names</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/common_names.html">common_names_md</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/syn_and_comb.html">syn_and_comb</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/syn_and_comb.html">syn_and_comb_md</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/common_names.html">common_names</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/syn_and_comb.html">syn_and_comb</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/common_names.html">common_names_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/syn_and_comb.html">syn_and_comb_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="taxonomic-indexes-and-links">Taxonomic indexes and links<a class="anchor" aria-label="anchor" href="#taxonomic-indexes-and-links"></a>
@@ -254,14 +255,32 @@ abbreviations and aliases.</p>
 <code><a href="../reference/indexations.html">worms_url()</a></code>, and <code><a href="../reference/indexations.html">eol_url()</a></code> are shortcuts for
 requesting an individual platform. They return a link when the required
 identifier is available in the record.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Bidens andicola"</span></span>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/indexations.html">indexations</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/indexations.html">gbif_url</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/indexations.html">col_url</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
+<p>To request one registry, pass its identifier. Accepted names include
+<code>"gbif"</code>, <code>"inat"</code>, <code>"col"</code>,
+<code>"ipni"</code>, <code>"wfo"</code>, <code>"tpl"</code>,
+<code>"itis"</code>, <code>"ncbi"</code>, <code>"irmng"</code>,
+<code>"worms"</code>, and <code>"eol"</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/indexations.html">indexations</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, identifier <span class="op">=</span> <span class="st">"gbif"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/indexations.html">indexations_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, identifier <span class="op">=</span> <span class="st">"inat"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="language-and-focused-queries">Language and focused queries<a class="anchor" aria-label="anchor" href="#language-and-focused-queries"></a>
+</h2>
+<p>The package uses its configured language for labels. Set Spanish for
+ChecklistBank calls in the current R session, or choose it for one call.
+A session setting remains active for later calls. Use <code>rank</code>
+when only one part of the classification is needed.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_configure.html">sacha_configure</a></span><span class="op">(</span>clb <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/classification.html">classification</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/common_names.html">common_names</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/indexations.html">indexations</a></span><span class="op">(</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/indexations.html">indexations</a></span><span class="op">(</span><span class="va">species</span>, identifier <span class="op">=</span> <span class="st">"gbif"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/indexations.html">gbif_url</a></span><span class="op">(</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/indexations.html">col_url</a></span><span class="op">(</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/indexations.html">indexations_md</a></span><span class="op">(</span><span class="va">species</span>, identifier <span class="op">=</span> <span class="st">"inat"</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/classification.html">classification</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, rank <span class="op">=</span> <span class="st">"family"</span>, language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references-and-bibtex-files">References and BibTeX files<a class="anchor" aria-label="anchor" href="#references-and-bibtex-files"></a>
@@ -275,15 +294,13 @@ bibliographic entry. No file is created when the record contains no
 references.</p>
 <p>The file is saved under
 <code>sacha_exports/Family_Genus_species</code>, within the base
-directory specified by <code>bib_dir</code>. An export can replace a
+directory specified by <code>directory</code>. An export can replace a
 file with the same name; review the output before adding the BibTeX file
 to a project.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Bidens andicola"</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/references_sp.html">references_sp</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/references_sp.html">references_sp_md</a></span><span class="op">(</span><span class="va">species</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/references_sp.html">references_sp</a></span><span class="op">(</span><span class="va">species</span>, save_bib <span class="op">=</span> <span class="cn">TRUE</span>, bib_dir <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/references_sp.html">references_sp</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/references_sp.html">references_sp_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/references_sp.html">references_sp</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, save_bib <span class="op">=</span> <span class="cn">TRUE</span>, directory <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="integrated-taxonomic-report">Integrated taxonomic report<a class="anchor" aria-label="anchor" href="#integrated-taxonomic-report"></a>
@@ -292,9 +309,21 @@ to a project.</p>
 a stable order: accepted name, first publication, indexations, common
 names, classification, synonyms and combinations, documented areas, and
 references. The <code>language</code>, <code>rank</code>,
-<code>save_bib</code>, and <code>bib_dir</code> arguments customize the
-relevant sections. In a Quarto or R Markdown document, configure the
+<code>save_bib</code>, and <code>directory</code> arguments customize
+the relevant sections. In a Quarto or R Markdown document, configure the
 chunk to interpret the output as Markdown text.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_clb_report.html">sacha_clb_report</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
+<p>For Spanish labels or a BibTeX export, set only the options needed
+for that report:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_clb_report.html">sacha_clb_report</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  language <span class="op">=</span> <span class="st">"es"</span>,</span>
+<span>  rank <span class="op">=</span> <span class="st">"family"</span>,</span>
+<span>  save_bib <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"."</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>This report retains the module’s dependencies: ChecklistBank and any
 auxiliary services used by the source to complete identifiers must be
 available. It does not read data offline from a ColDP archive.</p>
@@ -309,7 +338,7 @@ the ZIP and a metadata JSON file under
 does not filter the archive to <em>Bidens andicola</em>, may transfer a
 large volume of data, and is separate from the accessors in this
 vignette. Do not run it as part of an automated documentation build.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/save_clb.html">save_clb</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/save_clb.html">save_clb</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="st">"3LXR"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>ChecklistBank documents its services at <a href="https://api.checklistbank.org/" class="external-link uri">https://api.checklistbank.org/</a>. ColDP and its tables are

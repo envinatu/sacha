@@ -4,10 +4,16 @@
 \alias{sacha_configure}
 \title{Configure package modules}
 \usage{
-sacha_configure(global = NULL, inat = NULL, spatial = NULL)
+sacha_configure(
+  clb = NULL,
+  inat = NULL,
+  spatial = NULL,
+  source = NULL,
+  directory = NULL
+)
 }
 \arguments{
-\item{global}{Optional named list of settings for the ChecklistBank and
+\item{clb}{Optional named list of settings for the ChecklistBank and
 taxonomic-indexation module.}
 
 \item{inat}{Optional named list of settings for iNaturalist image queries,
@@ -15,22 +21,40 @@ downloads, and cache safeguards.}
 
 \item{spatial}{Optional named list of settings for GBIF maps and spatial
 accessors.}
+
+\item{source}{Optional shared data source for functions that expose a
+source argument: "web" or "local". NULL removes a previously set shared
+override. If omitted, function-specific defaults are preserved.}
+
+\item{directory}{Optional shared base directory for functions that read or
+save files. The same path is used for GBIF occurrences and maps,
+iNaturalist images, taxonomic references, and ChecklistBank exports.
+\code{NULL} removes a previously set shared override. If omitted, each
+function uses the current working directory.}
 }
 \value{
-The nested active configuration. It is returned visibly for a
-query and invisibly after an update.
+The active module configuration and shared source and directory
+overrides. It is returned visibly for a query and invisibly after an
+update.
 }
 \description{
 Inspect or update the configuration of the ChecklistBank-backed accessors,
 iNaturalist image functions, and spatial functions. Each module has its own
 settings and validation. Pass settings in named lists so that identically
 named options, such as \code{language}, retain a clear module-specific scope.
-With no arguments, the function visibly returns the active configuration
-grouped by module. When one or more groups are supplied, only their listed
-settings are changed and the resulting configuration is returned invisibly.
+The optional top-level source sets one shared retrieval default for
+functions that accept a source selector. Its values are "web" and
+"local"; if omitted, each function retains its current default. Set it to
+NULL to remove the shared override. With no arguments, the function visibly
+returns the active configuration grouped by module, together with the
+shared source and directory values. The optional \code{directory} sets the common
+base path for functions that read or save files; all of them place their existing
+subdirectory structures inside that path. When settings are supplied, only
+those settings are changed and the resulting configuration is returned
+invisibly.
 }
 \details{
-The \code{global} group configures ChecklistBank accessors and taxonomic
+The \code{clb} group configures ChecklistBank-backed accessors and taxonomic
 indexation links. Its available fields are \code{dataset}, \code{base_url},
 \code{gbif_base}, \code{inat_base}, \code{source_name}, \code{taxon_url_template}, \code{language},
 \code{fetcher}, and \code{labels}. \code{dataset} defaults to \code{"3LXR"}; URL fields must
@@ -43,7 +67,7 @@ lookups in \code{locations()}.
 
 The \code{inat} group configures iNaturalist requests and image handling. It
 accepts \code{inat_api}, \code{checklistbank_api}, \code{catalogue_dataset}, \code{user_agent},
-\code{language}, \code{default_quality_grade}, \code{default_images_directory},
+\code{language}, \code{default_quality_grade},
 \code{default_image_size}, \code{default_save_image_size}, \code{cache_max_entries},
 \code{request_delay}, \code{small_download_delay}, \code{large_download_delay},
 \code{hourly_media_limit_gb}, and \code{daily_media_limit_gb}. \code{default_quality_grade}
@@ -67,19 +91,26 @@ a 30-second HTTP timeout, three attempts, and an unlimited cache age.
 \code{http_max_tries} must be at least one.
 
 Settings in different groups remain independent even when they have similar
-names. For example, \code{language} in \code{global}, \code{inat}, and \code{spatial} changes
-only that module's default. The global ChecklistBank dataset and API are
+names. For example, \code{language} in \code{clb}, \code{inat}, and \code{spatial} changes only
+that module's default. The ChecklistBank dataset and API configured by \code{clb} are
 shared by \code{sacha_clb.R} and \code{locations.R}; the iNaturalist
 attribution dataset remains independently configurable.
+The source selector is distinct from \code{clb$source_name}, which labels the
+configured taxonomic provider. ChecklistBank and ColDP accessors remain
+web-backed and do not yet expose a local source; future local support can
+use the same "web" / "local" choices.
 }
 \examples{
 \donttest{
 sacha_configure()
 sacha_configure(
-  global = list(language = "es", dataset = "COL25"),
+  clb = list(language = "es", dataset = "COL25"),
   inat = list(language = "en", default_image_size = "large"),
-  spatial = list(default_limit = 500)
+  spatial = list(default_limit = 500),
+  source = "web",
+  directory = "data"
 )
+sacha_configure(source = NULL)
 }
 }
 \references{

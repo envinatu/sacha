@@ -9,21 +9,23 @@ inat_save_images(
   user_id = NULL,
   number_observations = 1L,
   observation_id = NULL,
-  image_size = c(.sacha_inat_defaults$default_save_image_size, setdiff(c("original",
-    "large", "medium", "small", "square"), .sacha_inat_defaults$default_save_image_size)),
-  include_auxiliary = TRUE,
-  images_directory = .sacha_inat_defaults$default_images_directory,
-  quality_grade = .sacha_inat_defaults$default_quality_grade,
+  image_size = NULL,
+  include_auxiliary = FALSE,
+  directory = getwd(),
+  quality_grade = NULL,
   place_id = NULL,
-  catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
-  language = .inat_language_choices(preferred = .sacha_inat_defaults$language),
+  catalogue_dataset = NULL,
+  language = NULL,
   overwrite = FALSE,
-  refresh = FALSE
+  refresh = FALSE,
+  taxon_id = NULL
 )
 }
 \arguments{
 \item{species}{Optional scientific name, normally written as "Genus species".
-Supply either species or observation_id.}
+It is matched exactly (case-insensitive) to a species-rank taxon. Supply
+either \code{species} or \code{taxon_id}; \code{observation_id} may be used alone or with
+either selector.}
 
 \item{user_id}{Optional iNaturalist login used to restrict a species search.
 NULL includes observations from all users.}
@@ -32,60 +34,79 @@ NULL includes observations from all users.}
 observations to retrieve; defaults to 1.}
 
 \item{observation_id}{Optional iNaturalist observation identifier or vector
-of identifiers. When supplied with \code{species}, the taxonomic identity is
-verified; when supplied alone, all identifiers are cross-checked against
-a single common taxon.}
+of identifiers. When supplied with \code{species} or \code{taxon_id}, the taxonomic
+identity is verified; when supplied alone, all identifiers are
+cross-checked against a single common taxon.}
 
-\item{image_size}{Image variant: medium (default), large, original, small,
-or square.}
+\item{image_size}{Image variant: \code{"medium"}, \code{"large"}, \code{"original"},
+\code{"small"}, or \code{"square"}. When omitted, the function uses the configured
+image size; for \code{inat_images()} and \code{inat_images_md()} this is
+\code{default_image_size}, initially \code{"medium"}. \code{inat_save_images()} uses
+\code{default_save_image_size}, also initially \code{"medium"}.}
 
 \item{include_auxiliary}{Logical; save all photographs of each observation
-when \code{TRUE}, or only the primary photograph when \code{FALSE}.}
+when \code{TRUE}, or only the primary photograph when \code{FALSE} (default).}
 
-\item{images_directory}{Base directory under which the package creates or
+\item{directory}{Base directory under which the package creates or
 searches \code{sacha_exports/Family_Genus_species/inat}. Defaults to the
 working directory. Existing archives in the former \code{images} directory
 and earlier taxon-directory layout remain readable when using the default
 path.}
 
-\item{quality_grade}{iNaturalist observation quality filter. "research"
-(default) excludes casual observations; "needs_id" selects observations
-awaiting community identification. Valid API values are research,
-needs_id, and casual.}
+\item{quality_grade}{iNaturalist observation quality filter. When omitted,
+the configured \code{default_quality_grade} is used (initially \code{"research"}).
+Valid API values are \code{"research"}, \code{"needs_id"}, and \code{"casual"}.}
 
 \item{place_id}{Optional numeric iNaturalist place identifier.}
 
 \item{catalogue_dataset}{ChecklistBank dataset identifier used to obtain
-taxonomic authorship.}
+taxonomic authorship. When omitted, the configured dataset is used
+(initially \code{"3LXR"}).}
 
-\item{language}{Caption language. English is the default; Spanish and other
-installed inst/lang language files are also accepted.}
+\item{language}{Caption language. When omitted, the configured iNaturalist
+language is used (initially English). Spanish and other installed
+\code{inst/lang} language files are also accepted.}
 
 \item{overwrite}{Logical; overwrite existing local image files.}
 
 \item{refresh}{If TRUE, bypass cached API results.}
+
+\item{taxon_id}{Optional positive iNaturalist taxon ID (numeric or numeric
+text) at species rank. It queries that taxon directly without resolving a
+name. Observations are checked against the exact taxon ID. Local searches
+use the saved taxon ID and retain the existing directory structure.}
 }
 \value{
 A data frame documenting saved observations, folders, metadata files,
 and the number of successfully available images.
 }
 \description{
-Downloads the primary photograph and, by default, all auxiliary photographs
+Downloads the primary photograph and, when requested, all auxiliary photographs
 associated with selected iNaturalist observations. Each observation receives
 a JSON metadata file containing the standardised taxonomic, licensing,
 locality, observer, and source-URL information required to reproduce the
 corresponding scientific figure without querying the web again.
+The iNaturalist API is intended for small or medium requests; use observation
+exports for bulk extraction. See
+\url{https://www.inaturalist.org/pages/api+recommended+practices}.
 }
 \details{
 Images and their metadata are organised under
-\verb{sacha_exports/Family_Genus_species/inat/} within \code{images_directory},
+\verb{sacha_exports/Family_Genus_species/inat/} within \code{directory},
 preserving the package's taxonomic directory convention while separating
 iNaturalist files from exports produced by other package modules.
+
+When omitted, \code{image_size}, \code{quality_grade}, \code{catalogue_dataset}, and
+\code{language} use the active iNaturalist settings from
+\code{sacha_configure(inat = ...)}. For this function, \code{image_size} follows
+\code{default_save_image_size} (initially \code{"medium"}). An explicit function
+argument takes precedence over \code{sacha_arg_configure()}; a shared argument
+default takes precedence over the module setting.
 }
 \examples{
 \dontrun{
-inat_save_images("Genus species", number_observations = 2)
-
-inat_save_images(observation_id = c(123456, 123457))
+inat_save_images("Bidens andicola", user_id = "marceloamores")
+inat_images("Bidens andicola", user_id = "marceloamores",
+            source = "local")
 }
 }

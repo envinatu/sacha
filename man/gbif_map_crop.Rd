@@ -6,59 +6,66 @@
 \title{Generate a GBIF occurrence map cropped to a geographic boundary}
 \usage{
 gbif_map_crop(
-  species,
-  kml = NULL,
+  species = NULL,
+  crop_vector = NULL,
   crop_area = NULL,
   crop_box = NULL,
-  limit = 100000L,
+  limit = 50000L,
   mode = c("interactive", "static"),
   save_occurrences = FALSE,
   export_image = FALSE,
   directory = getwd(),
   colour = NULL,
   dpi = NULL,
-  ppp = NULL,
   overwrite = TRUE,
   distribution = c("local", "global"),
-  source = c("gbif", "local"),
-  local_export = c("species", "crop")
+  source = c("web", "local"),
+  local_export = c("species", "crop"),
+  taxon_id = NULL,
+  generate_doi = FALSE,
+  date = NULL,
+  static_legend_position = "bottomleft"
 )
 
 gbif_map_crop_md(
-  species,
-  kml = NULL,
+  species = NULL,
+  crop_vector = NULL,
   crop_area = NULL,
   crop_box = NULL,
-  limit = 100000L,
+  limit = 50000L,
   mode = NULL,
   save_occurrences = FALSE,
   export_image = FALSE,
   directory = getwd(),
   colour = NULL,
   dpi = NULL,
-  ppp = NULL,
   overwrite = TRUE,
   distribution = c("local", "global"),
   fig_width = NULL,
   fig_height = NULL,
-  source = c("gbif", "local"),
-  local_export = c("species", "crop")
+  source = c("web", "local"),
+  local_export = c("species", "crop"),
+  taxon_id = NULL,
+  generate_doi = FALSE,
+  date = NULL,
+  static_legend_position = "bottomleft"
 )
 }
 \arguments{
 \item{species}{A binomial scientific name in the form \code{"Genus species"},
 e.g. \code{"Bidens andicola"}. GBIF must resolve it as an exact species-level
-name; approximate and higher-rank matches are rejected.}
+name; approximate and higher-rank matches are rejected. Supply exactly
+one of \code{species} or \code{taxon_id}.}
 
-\item{kml}{Path to a \code{.kml} file whose geometry defines the crop extent and
-is drawn as the map outline. The file name provides the place name used
-in captions and in the export directory. It cannot be combined with
-\code{crop_area}.}
+\item{crop_vector}{Path to a \code{.kml} or \code{.shp} file whose geometry defines
+the crop extent and is drawn as the map outline. The file name provides
+the place name used in captions and in the export directory. It cannot be
+combined with \code{crop_area}.}
 
 \item{crop_area}{Geographic area name or code resolved against Natural
 Earth's administrative gazetteer, such as \code{"Ecuador"} or \code{"EC"}. Its
 complete administrative name is used in captions and legends, unless
-\code{crop_box} provides a label. It cannot be combined with \code{kml}.}
+\code{crop_box} provides a label. It cannot be combined with \code{crop_vector}.}
 
 \item{crop_box}{Rectangular crop in WGS 84 decimal degrees, given as
 \code{c(xmin, ymin, xmax, ymax)}: west and east longitude, south and north
@@ -67,23 +74,27 @@ string, sets the crop label, e.g. \code{c(-82.5, -5.5, -75.0, 1.6, "Ecuador cont
 legend: it uses this label when present and otherwise uses the formatted
 rectangle coordinates, e.g. \code{"82.5°W, 5.5°S, 75°W, 1.6°N"}. A supplied
 label also replaces the area name in captions and the export directory.
-It can be used alone or together with \code{kml} or \code{crop_area}; in the latter
+It can be used alone or together with \code{crop_vector} or \code{crop_area}; in the latter
 case it must overlap the boundary. The map is framed on the rectangle,
 which is not drawn. With \code{distribution = "global"} all records are still
 mapped, but only those inside the frame are visible. Defaults to \code{NULL}
 (no rectangular crop).}
 
 \item{limit}{Maximum number of georeferenced occurrences used to draw the
-map, an integer between \code{1} and \code{100000}. Defaults to \code{100000}.}
+map, an integer between \code{1} and \code{100000}. For local distribution, spatial
+filters are applied before this limit. Defaults to \code{50000}. For
+high-volume species such as \verb{Amaranthus hybridus}, prefer a local export or
+narrow the query with \code{date}, \code{crop_vector}, \code{crop_area}, or \code{crop_box}.}
 
 \item{mode}{Map type: \code{"interactive"} (default; a Leaflet widget) or
 \code{"static"} (a ggplot2 map). In \code{gbif_map_crop_md()}, \code{NULL} selects an
 interactive map for HTML output and a static map for other formats.}
 
-\item{save_occurrences}{Logical. If \code{TRUE}, the records located within the
-area, its boundary, and a provenance file containing the validated GBIF
-taxon key and exact name match are saved under
-\code{sacha_exports/Family_Genus_species/Place}. Defaults to \code{FALSE}.}
+\item{save_occurrences}{Logical. If \code{TRUE}, records located within the area,
+the boundary, and a provenance file are saved under
+\code{sacha_exports/Family_Genus_species/Place}. The metadata includes the
+validated COL XR taxon key and exact taxon match. A registered download DOI
+is included when \code{generate_doi = TRUE}. Defaults to \code{FALSE}.}
 
 \item{export_image}{Logical. If \code{TRUE}, the static map is written as a PNG
 file to \code{sacha_exports/Family_Genus_species/Place}. Defaults to \code{FALSE}.}
@@ -99,36 +110,62 @@ colour is used.}
 \item{dpi}{Resolution of the exported PNG in dots per inch. When \code{NULL},
 the package default resolution is used.}
 
-\item{ppp}{Spanish-language synonym of \code{dpi} (puntos por pulgada). If both
-are supplied, \code{ppp} takes precedence.}
-
 \item{overwrite}{Logical. Should existing output files be replaced? If
 \code{FALSE}, an existing local occurrence export raises an error. Defaults to
 \code{TRUE}.}
 
 \item{distribution}{Geographic distribution of the mapped records:
-\code{"local"} (default) restricts them to the area; \code{"global"} includes
-all records of the species.}
+\code{"local"} (default) retrieves and maps records within the area;
+\code{"global"} maps the available global record set in the map frame. For a
+local source, the widest compatible saved extent is used and may be
+partial.}
 
-\item{source}{Occurrence source: \code{"gbif"} (default) retrieves records from
+\item{source}{Occurrence source: \code{"web"} (default) retrieves records from
 GBIF; \code{"local"} reads a saved export from \code{sacha_exports} under
 \code{directory}.}
 
-\item{local_export}{Saved export used when \code{source = "local"}:
-\code{"species"} (default) reads the full-extent export of the species and
-applies the area; \code{"crop"} reads the export saved for the area.
-It is ignored when \code{source = "gbif"}.}
+\item{local_export}{Saved export used when \code{source = "local"} and
+\code{distribution = "local"}: \code{"species"} (default) reads the full-extent
+export and applies the area; \code{"crop"} reads the export saved for the area.
+For \code{distribution = "global"}, the full-extent export is preferred and
+compatible cropped exports are combined if no full-extent export exists.
+It is ignored when \code{source = "web"}.}
 
-\item{fig_width, fig_height}{Figure dimensions in inches for static maps
-produced by \code{gbif_map_crop_md()}. They do not set the size of interactive
-Leaflet maps. When \code{NULL}, static-map dimensions follow the map aspect
-ratio.}
+\item{taxon_id}{A COL XR alphanumeric species usage key, such as \code{"Q2M4"}.
+GBIF verifies that the key identifies one species-level taxon. Supply
+exactly one of \code{taxon_id} or \code{species}.}
+
+\item{generate_doi}{Logical. If \code{TRUE} and \code{source = "web"}, create and wait
+for a registered GBIF download, and record its DOI in \code{metadata.json}.
+This requires GBIF account credentials. If \code{FALSE} (default), use the
+faster occurrence-search API and save the returned records without waiting
+for a DOI. For a local source, no GBIF request is made.}
+
+\item{date}{Optional ISO date or range such as
+\code{"2020-01-01,2021-01-01"}. It filters occurrence datasets by their GBIF
+registry creation date (\code{createdDate}), then selects records from those
+datasets. It does not filter the date an occurrence was observed. Local
+exports can use only the same date filter recorded in their metadata.}
+
+\item{static_legend_position}{Position of the static legend as one composed
+unit with its scale bar and north arrow. Applies to static maps and PNGs
+written with \code{export_image = TRUE}, including when \code{mode} is
+\code{"interactive"}: \code{"bottomleft"} (default), \code{"bottom"},
+\code{"bottomright"}, \code{"right"}, \code{"topright"}, \code{"top"}, \code{"topleft"}, or
+\code{"left"}. It does not change the interactive map widget.}
+
+\item{fig_width, fig_height}{Dimensions in inches for static maps produced
+by \code{gbif_map_crop_md()}. When \code{NULL}, the static map dimensions follow its
+aspect ratio. Interactive Leaflet maps use the widget and output
+container's default sizing.}
 }
 \value{
 A Leaflet widget or a ggplot2 object. Paths of the written files
 are stored in the \code{"sacha_files"} attribute, the plotted records in
-\code{"sacha_occurrences"}, the species in \code{"sacha_species"}, and the resolved
-place name in \code{"sacha_crop_place"}. \code{gbif_map_crop_md()} returns the map
+\code{"sacha_occurrences"}, the species in \code{"sacha_species"}, the resolved
+place name in \code{"sacha_crop_place"}, and local coverage details in
+\code{"sacha_local_coverage"} for global local-source maps.
+\code{gbif_map_crop_md()} returns the map
 formatted for the report output.
 }
 \description{
@@ -137,15 +174,15 @@ of a species within a geographic boundary, and \code{gbif_map_crop_md()} creates
 the same map for a markdown-formatted report (Quarto or R Markdown).
 }
 \details{
-The area to map is defined with \code{kml}, \code{crop_area}, or \code{crop_box}. \code{kml} and
-\code{crop_area} are mutually exclusive and define a boundary that is drawn as
-the map outline; \code{crop_box} defines a rectangle and can be used alone or
-together with either of them. With \code{distribution = "local"} (default), only
+The area to map is defined with \code{crop_vector}, \code{crop_area}, or \code{crop_box}.
+\code{crop_vector} and \code{crop_area} are mutually exclusive and define a boundary
+that is drawn as the map outline; \code{crop_box} defines a rectangle and can be
+used alone or together with either of them. With \code{distribution = "local"} (default), only
 records inside the area are mapped. With \code{distribution = "global"}, all
 available georeferenced records are mapped and the boundary, when there is
 one, is kept as a reference outline.
 
-When \code{crop_box} is combined with \code{kml} or \code{crop_area}, the boundary is
+When \code{crop_box} is combined with \code{crop_vector} or \code{crop_area}, the boundary is
 clipped to the rectangle and the map is framed on the rectangle, so that
 only the part of the area that falls inside it is shown; the rectangle
 itself is not drawn. For example, \code{crop_area = "EC"} maps Ecuador including
@@ -156,20 +193,31 @@ framed on the rectangle and no outline is drawn. Clipping is performed in
 planar longitude/latitude coordinates, so the edges of the rectangle follow
 the meridians and parallels given.
 
-With \code{source = "gbif"} (default), the supplied binomial is first resolved
-as an exact, species-level name in the configured GBIF checklist (COL
-Extended Release by default). Its taxon key and that same checklist key are
-then used for the occurrence query, preventing approximate or higher-rank
-name matches. With \code{source = "local"}, GBIF is not contacted and
+For a GBIF source with \code{distribution = "local"}, \code{crop_area} is sent to GBIF
+as its standardized two-letter \code{country} filter when available. A vector or
+rectangle is sent as a WGS 84 spatial predicate in both fast occurrence
+searches and registered downloads. The returned points are then checked
+against the exact package boundary. If a complex vector exceeds GBIF's query
+size limit, its bounding box is used to retrieve candidates before exact
+local filtering. A \code{distribution = "global"} map keeps its global query;
+when \code{save_occurrences = TRUE}, its saved crop is retrieved separately with
+the spatial filter.
+
+With \code{source = "web"} (default), supply exactly one of \code{species} or
+\code{taxon_id}. GBIF resolves the binomial as an exact, species-level name or
+validates the COL XR usage key as an exact species-level taxon. Its taxon
+key and that same checklist key are then used for the occurrence query,
+preventing approximate or higher-rank name matches. The accepted name
+determines the output directory, so either input form selects the same
+species export. With \code{source = "local"}, GBIF is not contacted and
 records are read from a saved export under \code{sacha_exports} in
 \code{directory}, in one of two ways set by \code{local_export}:
 \itemize{
 \item \code{"species"} (default): the full-extent export of the species
 (\code{sacha_exports/Family_Genus_species}), produced by
 \code{save_occurrences = TRUE} in \code{\link[=gbif_map]{gbif_map()}} or by
-\code{\link[=gbif_save_occurrences]{gbif_save_occurrences()}}. The area is applied to these records
-exactly as it is applied to records retrieved from GBIF. This is the
-only option compatible with \code{distribution = "global"}.
+\code{\link[=gbif_save_occurrences]{gbif_save_occurrences()}}. The selected area is applied to these
+records as it is applied to records retrieved from GBIF.
 \item \code{"crop"}: an export previously saved for the same area
 (\code{sacha_exports/Family_Genus_species/Place}), which contains the
 filtered records and the stored boundary. It requires
@@ -177,6 +225,13 @@ filtered records and the stored boundary. It requires
 the same \code{crop_box} (and therefore the same label) must be supplied to
 identify it.
 }
+With \code{distribution = "global"}, a full-extent species export is used when
+available. If it is absent, compatible cropped exports for the same COL XR
+taxon are found recursively and combined; duplicate records with the same
+GBIF or dataset-occurrence identifier are removed. A single cropped export
+is also accepted. The map's \code{sacha_local_coverage} attribute reports whether
+it used a full-extent export or partial local crops. In this mode,
+\code{local_export} does not prevent fallback to the widest available local data.
 
 Interactive maps show the scientific name, year, locality, and observer
 (\code{recordedBy}) reported by GBIF for each occurrence. Missing values are
@@ -188,17 +243,34 @@ area and its boundary, whatever the value of \code{distribution}, in
 \code{Place} is the name of the area or, when \code{crop_box} is supplied, its label.
 If \code{crop_box} is supplied, the stored records and boundary are those inside
 the rectangle; when \code{crop_box} is used alone, the stored boundary is the
-rectangle itself. Records are not truncated by \code{limit}.
+rectangle itself. The spatial filter is applied before \code{limit}. For a global
+GBIF map, saving a crop performs a separate spatially filtered retrieval;
+its \code{metadata.json} records the query and, when requested, the DOI for that
+filtered download.
 Three files are written: \code{occurrences.gpkg} (records in WGS 84, EPSG:4326),
 \code{boundary.gpkg}, and \code{metadata.json} (query, retrieval date, coordinate
-reference system, and record count). With \code{distribution = "global"} the map
-still shows all records, but only those inside the area are saved; if
+reference system, record count, and, when \code{generate_doi = TRUE}, the official
+GBIF download key and DOI). Registered downloads require \code{GBIF_USER},
+\code{GBIF_PWD}, and \code{GBIF_EMAIL} credentials. With \code{distribution = "global"} the map
+still shows its global record set, but only those inside the area are saved; if
 none falls inside, nothing is saved and a warning is issued. When the
-records come from the full-extent local export, the metadata retain the
-original GBIF provenance and add a \code{derived_from} entry and the processing
-date, so that a crop produced offline has the same traceability as one
-produced from GBIF. If the records were read from a cropped local export,
-they are already saved and nothing is written.
+records come from the full-extent local export, the metadata retain its
+query, provenance, and any DOI it contains, and add a \code{derived_from} entry
+and the processing date, so that a crop produced offline has the same traceability as one
+produced from GBIF. When \code{source = "local"}, \code{local_export = "crop"}, and
+\code{distribution = "local"}, the records are already saved and nothing is written.
+
+Configure the GBIF account credentials in the current R session with
+\code{Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password", GBIF_EMAIL = "your_account_email")}. To keep them available in future
+sessions, add the same three variables to your personal \verb{~/.Renviron} file
+and restart R. Do not share or publish that file.
+
+GBIF uses the Catalogue of Life Extended Release (COL XR) as the taxonomic
+reference for occurrence downloads. By downloading the data, you
+acknowledge GBIF's \href{https://www.gbif.org/terms/data-user}{data-use agreement}.
+When citing or referring to registered downloads (\code{generate_doi = TRUE}), follow GBIF's
+\href{https://www.gbif.org/citation-guidelines#occDataDownload}{citation guidelines}
+and include the DOI assigned to that specific download in every publication.
 
 Setting \code{export_image = TRUE} writes the static map as a PNG file, whatever
 the value of \code{mode}, to the same directory as the saved files
@@ -212,7 +284,7 @@ lower-case, ASCII-normalised area name or crop label. For example,
 \code{crop_area = "Ecuador"} yields
 \code{fig-gbif-map-crop-bidens_andicola-ecuador}; the label
 \code{"Ecuador continental"} yields
-\code{fig-gbif-map-crop-bidens_andicola-ecuador_continental}. A KML map uses its
+\code{fig-gbif-map-crop-bidens_andicola-ecuador_continental}. A crop-vector map uses its
 resolved place name. Use the resulting ID as \verb{@fig-gbif-map-crop-...} in
 report prose; \code{distribution}, \code{source}, and \code{mode} do not change the ID.
 For generated Markdown figures, set \code{results: asis} on the Quarto or
@@ -220,7 +292,8 @@ R Markdown chunk.
 }
 \examples{
 \dontrun{
-map <- gbif_map_crop("Bidens andicola", kml = "Ecuador.kml", limit = 100)
+map <- gbif_map_crop("Bidens andicola", crop_vector = "Ecuador.kml", limit = 100)
+map_by_key <- gbif_map_crop(taxon_id = "Q2M4", crop_area = "Ecuador")
 map
 
 gbif_map_crop("Bidens andicola", crop_area = "EC",
@@ -236,25 +309,25 @@ gbif_map_crop("Bidens andicola", crop_area = "Ecuador", source = "local",
               local_export = "crop")
 
 gbif_map_crop_md("Bidens andicola", crop_area = "Ecuador",
-                  source = "gbif", distribution = "local")
+                  source = "web", distribution = "local")
 gbif_map_crop_md("Bidens andicola", crop_area = "Ecuador",
                   crop_box = c(-82.5, -5.5, -75.0, 1.6,
                                "Ecuador continental"),
-                  source = "gbif", distribution = "global", mode = "static",
+                  source = "web", distribution = "global", mode = "static",
                   save_occurrences = TRUE, export_image = TRUE,
-                  colour = "#1B9E77", ppp = 300, overwrite = TRUE,
+                  colour = "#1B9E77", dpi = 300, overwrite = TRUE,
                   fig_width = 8, fig_height = 6)
 gbif_map_crop_md("Bidens andicola",
                   crop_box = c(-82.5, -5.5, -75.0, 1.6,
                                "Ecuador continental"),
-                  source = "gbif", distribution = "local")
-gbif_map_crop_md("Bidens andicola", kml = "study_boundary.kml",
-                  source = "gbif", distribution = "local", mode = "static",
+                  source = "web", distribution = "local")
+gbif_map_crop_md("Bidens andicola", crop_vector = "study_boundary.kml",
+                  source = "web", distribution = "local", mode = "static",
                   export_image = TRUE)
-gbif_map_crop_md("Bidens andicola", kml = "study_boundary.kml",
+gbif_map_crop_md("Bidens andicola", crop_vector = "study_boundary.shp",
                   crop_box = c(-82.5, -5.5, -75.0, 1.6,
                                "study area detail"),
-                  source = "gbif", distribution = "global")
+                  source = "web", distribution = "global")
 gbif_map_crop_md("Bidens andicola", crop_area = "Ecuador",
                   source = "local", local_export = "species",
                   distribution = "global")

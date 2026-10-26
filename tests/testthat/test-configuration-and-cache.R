@@ -1,24 +1,29 @@
 testthat::test_that("module configuration is independent and validates groups before updating", {
   .sacha_test_with_state({
     visibility <- withVisible(sacha::sacha_configure(
-      global = list(dataset = "test-dataset"),
+      clb = list(dataset = "test-dataset"),
       inat = list(default_image_size = "large"),
       spatial = list(default_limit = 500L)
     ))
     testthat::expect_false(visibility$visible)
 
     current <- sacha::sacha_configure()
-    testthat::expect_identical(current$global$dataset, "test-dataset")
+    testthat::expect_identical(current$clb$dataset, "test-dataset")
+    testthat::expect_false("global" %in% names(current))
     testthat::expect_identical(current$inat$default_image_size, "large")
     testthat::expect_identical(current$spatial$default_limit, 500L)
     testthat::expect_identical(current$inat$language, "en")
     testthat::expect_identical(current$spatial$language, "en")
 
     testthat::expect_error(
-      sacha::sacha_configure(global = list(dataset = "must-not-be-applied"), inat = "large"),
+      sacha::sacha_configure(clb = list(dataset = "must-not-be-applied"), inat = "large"),
       "fully named list"
     )
-    testthat::expect_identical(sacha::sacha_configure()$global$dataset, "test-dataset")
+    testthat::expect_identical(sacha::sacha_configure()$clb$dataset, "test-dataset")
+    testthat::expect_error(
+      sacha::sacha_configure(global = list(dataset = "must-not-be-applied"))
+    )
+    testthat::expect_identical(sacha::sacha_configure()$clb$dataset, "test-dataset")
     testthat::expect_error(sacha::sacha_configure(spatial = list(default_limit = 0L)))
   })
 })
@@ -72,7 +77,7 @@ testthat::test_that("clearing caches restores defaults and preserves iNaturalist
     )
 
     sacha::sacha_configure(
-      global = list(dataset = "test-dataset"),
+      clb = list(dataset = "test-dataset"),
       inat = list(default_image_size = "large"),
       spatial = list(default_limit = 500L)
     )
@@ -93,7 +98,7 @@ testthat::test_that("clearing caches restores defaults and preserves iNaturalist
 
     testthat::expect_identical(sacha::sacha_clear_cache(), TRUE)
     current <- sacha::sacha_configure()
-    testthat::expect_identical(current$global$dataset, "3LXR")
+    testthat::expect_identical(current$clb$dataset, "3LXR")
     testthat::expect_identical(current$inat$default_image_size, "medium")
     testthat::expect_identical(current$inat$default_save_image_size, "medium")
     testthat::expect_identical(current$spatial$default_limit, 2000L)

@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>03. GBIF maps and documented areas • sacha</title>
+<title>Distribution Data, Geographic Areas, and Species Mapping with sacha • sacha</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="48x48" href="../favicon-48x48.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="03. GBIF maps and documented areas">
+<script src="../pkgdown.js"></script><meta property="og:title" content="Distribution Data, Geographic Areas, and Species Mapping with sacha">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -57,18 +57,21 @@
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
@@ -91,7 +94,8 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>03. GBIF maps and documented areas</h1>
+      <h1 data-toc-skip>Distribution Data, Geographic Areas, and Species
+Mapping with sacha</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/envinatu/sacha/blob/HEAD/vignettes/spatial-maps.Rmd" class="external-link"><code>vignettes/spatial-maps.Rmd</code></a></small>
@@ -102,159 +106,168 @@
     
     
 <div class="section level2">
-<h2 id="two-meanings-of-distribution">Two meanings of distribution<a class="anchor" aria-label="anchor" href="#two-meanings-of-distribution"></a>
+<h2 id="geographic-information-and-first-maps">Geographic information and first maps<a class="anchor" aria-label="anchor" href="#geographic-information-and-first-maps"></a>
 </h2>
-<p>This module brings together two kinds of geographic information that
-should be kept distinct. <code><a href="../reference/locations.html">locations()</a></code> returns geographic
-areas documented in the Catalogue of Life through ChecklistBank. GBIF
-functions represent georeferenced occurrence records. A documented area
-is not equivalent to a set of observations and does not, by itself,
-demonstrate current presence at every point within that area.</p>
-<p>GBIF queries require a network connection when using
-<code>source = "gbif"</code>. The <code>"local"</code> source avoids
-that query but requires compatible exports created in advance. Code
-chunks that interact with data or services are not executed when the
-vignette is built.</p>
-</div>
-<div class="section level2">
-<h2 id="catalogue-of-life-geographic-areas">Catalogue of Life geographic areas<a class="anchor" aria-label="anchor" href="#catalogue-of-life-geographic-areas"></a>
-</h2>
-<p><code>locations("Bidens andicola")</code> displays the areas
-documented by the source. <code><a href="../reference/locations.html">locations_md()</a></code> adds a heading and
-report-ready formatting. These functions do not have a
-<code>source</code> argument: they query the configured service and do
-not read records saved by GBIF.</p>
+<p>This module combines two kinds of geographic information.
+<code><a href="../reference/locations.html">locations()</a></code> returns areas documented by the Catalogue of
+Life through ChecklistBank. GBIF functions retrieve georeferenced
+occurrence records. A documented area is not equivalent to a set of
+observations and does not, by itself, establish current presence at
+every point within that area.</p>
+<p>Start with web queries and the built-in defaults.
+<code><a href="../reference/locations.html">locations()</a></code> and <code><a href="../reference/locations.html">locations_md()</a></code> query the
+configured ChecklistBank service. <code><a href="../reference/gbif_map.html">gbif_map()</a></code> creates an
+interactive map, while <code><a href="../reference/gbif_map.html">gbif_map_md()</a></code> formats a map for a
+document.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/locations.html">locations</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/locations.html">locations_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, language <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="full-extent-maps">Full-extent maps<a class="anchor" aria-label="anchor" href="#full-extent-maps"></a>
-</h2>
-<p><code><a href="../reference/gbif_map.html">gbif_map()</a></code> returns a map for interactive inspection or a
-static <code>ggplot2</code> object. <code>mode = "interactive"</code>
-creates a Leaflet map, while <code>mode = "static"</code> creates a
-static map. The <code><a href="../reference/gbif_map.html">gbif_map_md()</a></code> variant produces a figure for
-a document; if <code>mode</code> is <code>NULL</code>, it selects the
-appropriate type for the output format.</p>
-<p>GBIF must resolve the name as an exact species-level match and
-retrieves georeferenced observations. <code>limit</code> controls the
-number of observations used on the map; it is an integer from 1 to
-100000 and does not reduce the complete set saved when
-<code>save_occurrences = TRUE</code>. <code>colour</code> changes point
-color; <code>dpi</code> or its alias <code>ppp</code> controls PNG
-resolution. <code>overwrite</code> determines whether existing files are
-replaced. <code>export_image = TRUE</code> writes a static PNG, and
-<code>save_occurrences = TRUE</code> saves data and metadata. Exports
-are stored under <code>sacha_exports/Family_Genus_species</code> within
-<code>directory</code>. In <code>_md</code> variants,
-<code>fig_width</code> and <code>fig_height</code> adjust the document
-figure dimensions.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/locations.html">locations</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/gbif_map.html">gbif_map</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
+<p>Use the <code>_md</code> variant in Quarto or R Markdown when you
+want a figure with a caption and cross-reference identifier:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map.html">gbif_map</a></span><span class="op">(</span></span>
-<span>  <span class="st">"Bidens andicola"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"gbif"</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"static"</span>,</span>
-<span>  export_image <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/gbif_map.html">gbif_map_md</a></span><span class="op">(</span></span>
-<span>  <span class="st">"Bidens andicola"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"gbif"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"static"</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">500</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>The full-extent Markdown figure for this species uses the identifier
-<code>fig-gbif-map-bidens_andicola</code>; write
-<code>@fig-gbif-map-bidens_andicola</code> for a Quarto cross-reference.
-Add <code>results='asis'</code> to the chunk so the document renders the
-generated markup.</p>
-</div>
-<div class="section level2">
-<h2 id="cropped-maps">Cropped maps<a class="anchor" aria-label="anchor" href="#cropped-maps"></a>
-</h2>
-<p><code><a href="../reference/gbif_map_crop.html">gbif_map_crop()</a></code> and <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>
-define a region with <code>kml</code>, <code>crop_area</code>, or
-<code>crop_box</code>. <code>kml</code> and <code>crop_area</code> are
-mutually exclusive. <code>crop_box</code> can be used alone or with
-either one; its four numeric values are in WGS 84 decimal degrees and
-follow the order <code>xmin</code>, <code>ymin</code>,
-<code>xmax</code>, <code>ymax</code>. An optional label can be supplied
-as a fifth value. <code>crop_area</code> resolves an administrative area
-name or code using the Natural Earth gazetteer; <code>kml</code> takes a
-path to a KML geometry used as a boundary and visual reference.</p>
-<p><code>distribution = "local"</code> maps only occurrences inside the
-crop; <code>distribution = "global"</code> shows the full distribution
-within the map frame, with the region as a reference. When a box is
-combined with an area or KML, the region is limited to their
-intersection. For a local map, <code>local_export = "species"</code>
-starts from the full-species export and applies the crop;
-<code>local_export = "crop"</code> reads an export that already contains
-the crop and its boundary.</p>
-<p>The following example uses a box covering the global extent to show
-the argument structure without selecting a study area. In an analysis,
-replace its coordinates with the bounds of interest.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map_crop.html">gbif_map_crop_md</a></span><span class="op">(</span></span>
-<span>  <span class="st">"Bidens andicola"</span>,</span>
-<span>  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">180</span>, <span class="op">-</span><span class="fl">90</span>, <span class="fl">180</span>, <span class="fl">90</span>, <span class="st">"Global extent"</span><span class="op">)</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"gbif"</span>,</span>
-<span>  distribution <span class="op">=</span> <span class="st">"global"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"static"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>For a KML boundary, provide a valid file path when running the
-analysis; this vignette does not include or depend on a user-provided
-KML. A local query requires the relevant occurrences to have been saved
-in advance.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/locations.html">locations_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/gbif_map.html">gbif_map_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
+<p>GBIF map functions accept <code>source</code>, which defaults to
+<code>"web"</code>; <code>"local"</code> reads compatible files saved
+earlier. <code><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences()</a></code> retrieves records from
+GBIF. The <code><a href="../reference/locations.html">locations()</a></code> functions do not accept
+<code>source</code> and do not read GBIF exports. All code chunks in
+this vignette are displayed but not evaluated during its build.</p>
 </div>
 <div class="section level2">
 <h2 id="saving-and-reusing-occurrences">Saving and reusing occurrences<a class="anchor" aria-label="anchor" href="#saving-and-reusing-occurrences"></a>
 </h2>
-<p><code><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences()</a></code> retrieves up to 100,000
-georeferenced occurrences for the resolved taxon by default and saves
-the records with provenance metadata. Set <code>limit = NULL</code> to
-retrieve all available records. If <code>kml</code> is provided, it
-restricts the export to that boundary and saves the geometry as
-well.</p>
-<p>In map functions, <code>save_occurrences = TRUE</code> also creates a
-local export. When saving from <code><a href="../reference/gbif_map_crop.html">gbif_map_crop()</a></code>, the crop
-and its geometry are retained. The <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>
-variant accepts the same mapping arguments, as well as document
-figure-dimension options.</p>
+<p><code><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences()</a></code> saves occurrence records with
+query and provenance metadata. A map can also save the records used to
+create it with <code>save_occurrences = TRUE</code>. Choose one approach
+for a given retrieval.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
+<p>Or save the records while creating a map:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/gbif_map.html">gbif_map</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map.html">gbif_map</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, save_occurrences <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>The default export contains up to 50,000 records.
+<code>directory</code> sets the base folder; by default, exports are
+stored under <code>sacha_exports/Family_Genus_species</code> within the
+working directory. A local map reads those saved files without making a
+GBIF query:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map.html">gbif_map</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span></code></pre></div>
+<p>Local calls require an export for the same taxon in the selected
+directory. They do not download missing records. For repeatable document
+output, use the <code>_md</code> function and set
+<code>results='asis'</code> on its R Markdown chunk.</p>
+</div>
+<div class="section level2">
+<h2 id="interactive-and-static-maps">Interactive and static maps<a class="anchor" aria-label="anchor" href="#interactive-and-static-maps"></a>
+</h2>
+<p><code><a href="../reference/gbif_map.html">gbif_map()</a></code> defaults to an interactive Leaflet map. Use
+<code>mode = "static"</code> to return a <code>ggplot2</code> map.
+<code>export_image = TRUE</code> writes a PNG as well; it does not
+change the map object returned by the function.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map.html">gbif_map</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, mode <span class="op">=</span> <span class="st">"static"</span>, export_image <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>For a document, <code><a href="../reference/gbif_map.html">gbif_map_md()</a></code> selects a mode from the
+output format unless <code>mode</code> is supplied. Static figures can
+be sized with <code>fig_width</code> and <code>fig_height</code>;
+<code>colour</code>, <code>dpi</code>, and
+<code>static_legend_position</code> adjust the saved map’s appearance
+when needed.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map.html">gbif_map_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, mode <span class="op">=</span> <span class="st">"static"</span><span class="op">)</span></span></code></pre></div>
+<p>The <code>limit</code> argument controls the maximum number of
+occurrences used by a map. When <code>species</code> is supplied, the
+package resolves an exact species-level match; <code>taxon_id</code>
+accepts a COL XR key instead. <code>date</code> filters datasets by the
+GBIF registry creation date (<code>createdDate</code>), not by the
+occurrence date.</p>
+</div>
+<div class="section level2">
+<h2 id="cropped-maps">Cropped maps<a class="anchor" aria-label="anchor" href="#cropped-maps"></a>
+</h2>
+<p><code><a href="../reference/gbif_map_crop.html">gbif_map_crop()</a></code> and <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code> add
+a study area using <code>crop_area</code>, <code>crop_box</code>, or
+<code>crop_vector</code>. <code>crop_area</code> accepts a country name
+or code. <code>crop_box</code> uses WGS 84 decimal degrees in the order
+<code>xmin</code>, <code>ymin</code>, <code>xmax</code>,
+<code>ymax</code>; an optional fifth value labels the area.
+<code>crop_vector</code> accepts a KML or ESRI Shapefile path. Use only
+one of <code>crop_area</code> and <code>crop_vector</code>;
+<code>crop_box</code> can be combined with either one.</p>
+<p>The default <code>distribution = "local"</code> shows records inside
+the crop. <code>distribution = "global"</code> shows available species
+records in the map frame and uses the selected area as a reference
+boundary. With a web source and a local distribution, the selected
+country or geometry is sent to GBIF as a spatial filter.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map_crop.html">gbif_map_crop</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span><span class="op">)</span></span></code></pre></div>
+<p>The same crop can be rendered in a document. This example adds a
+rectangular boundary around continental Ecuador:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map_crop.html">gbif_map_crop_md</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Bidens andicola"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"static"</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">500</span></span>
-<span><span class="op">)</span></span>
+<span>  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">82.5</span>, <span class="op">-</span><span class="fl">5.5</span>, <span class="op">-</span><span class="fl">75.0</span>, <span class="fl">1.6</span>, <span class="st">"Ecuador continental"</span><span class="op">)</span>,</span>
+<span>  distribution <span class="op">=</span> <span class="st">"global"</span>,</span>
+<span>  mode <span class="op">=</span> <span class="st">"static"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>A KML or Shapefile can be used when a study boundary is already
+available. KML reading requires a GDAL installation with its KML
+driver.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_map_crop.html">gbif_map_crop</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_vector <span class="op">=</span> <span class="st">"study_boundary.kml"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="save-and-map-a-cropped-export-locally">Save and map a cropped export locally<a class="anchor" aria-label="anchor" href="#save-and-map-a-cropped-export-locally"></a>
+</h2>
+<p>To reuse a particular crop, save it with the same area definition and
+then select that crop when mapping. The saved export includes its
+boundary and metadata.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/gbif_map_crop.html">gbif_map_crop</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Bidens andicola"</span>,</span>
-<span>  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">180</span>, <span class="op">-</span><span class="fl">90</span>, <span class="fl">180</span>, <span class="fl">90</span>, <span class="st">"Global extent"</span><span class="op">)</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span>
 <span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
-<span>  local_export <span class="op">=</span> <span class="st">"species"</span>,</span>
-<span>  distribution <span class="op">=</span> <span class="st">"global"</span></span>
+<span>  local_export <span class="op">=</span> <span class="st">"crop"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Calls with <code>source = "local"</code> do not download missing
-records. If a requested crop is not present in the saved files, use the
-full-species export to apply the crop or create an appropriate cropped
-export.</p>
+<p>Alternatively, save a full-species export with
+<code>gbif_save_occurrences("Bidens andicola")</code>, then use
+<code>source = "local"</code> with <code>local_export = "species"</code>
+to apply a crop to those records. Local exports that cover only a crop
+represent only their saved geographic coverage; they do not establish
+worldwide coverage.</p>
+</div>
+<div class="section level2">
+<h2 id="provenance-and-gbif-download-doi">Provenance and GBIF download DOI<a class="anchor" aria-label="anchor" href="#provenance-and-gbif-download-doi"></a>
+</h2>
+<p>For an ordinary retrieval, <code><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences()</a></code> uses
+the occurrence search service. Set <code>generate_doi = TRUE</code> to
+request a registered GBIF download and save its DOI in the metadata.
+This requires <code>GBIF_USER</code>, <code>GBIF_PWD</code>, and
+<code>GBIF_EMAIL</code> to be available in the R session. Keep
+credentials outside the vignette and package source.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, generate_doi <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>The default limit is 50,000 records; <code>limit = NULL</code>
+requests all available matching records and is only valid with
+<code>generate_doi = TRUE</code>. The optional <code>date</code>
+argument filters by the registry’s <code>createdDate</code>, not by
+observation date. <code>taxon_id</code> can be supplied instead of the
+species name when a COL XR key is available. Review the saved metadata
+and cite the DOI assigned to that specific download in any
+publication.</p>
 </div>
 <div class="section level2">
 <h2 id="figures-in-quarto-and-r-markdown">Figures in Quarto and R Markdown<a class="anchor" aria-label="anchor" href="#figures-in-quarto-and-r-markdown"></a>
 </h2>
-<p>For chunks that call <code>_md</code> functions, use
-<code>results='asis'</code> so figure markup is passed to the renderer.
-Cropped-map figure identifiers include the species and normalized area
-label. For example, with the label <code>Global extent</code>, the
-reference follows the pattern
-<code>@fig-gbif-map-crop-bidens_andicola-global_extent</code>. Check the
-generated identifier in the rendered document if you change the
-label.</p>
+<p>For chunks that call <code>_md</code> map functions, use
+<code>results='asis'</code> so the renderer processes the figure markup.
+Static document figures accept <code>fig_width</code> and
+<code>fig_height</code>; interactive widgets use their container sizing.
+Figure identifiers include the species and, for cropped maps, the
+normalized area label. Check the identifier in the rendered document
+before using it in a cross-reference.</p>
 <p>For guidance on querying and attributing records, see the <a href="https://techdocs.gbif.org/en/openapi/" class="external-link">GBIF API
 documentation</a>.</p>
 </div>

@@ -27,7 +27,7 @@ pak::pkg_install("envinatu/sacha")
 library(sacha)
 
 sacha_configure(
-  global = list(language = "en"),
+  clb = list(language = "en"),
   inat = list(language = "en"),
   spatial = list(language = "en")
 )
@@ -39,12 +39,12 @@ common_names("Bidens andicola")
 
 These accessors query their configured ChecklistBank service. A connection to the relevant service is required when the result is not already available in the session cache.
 
-For an interactive map of georeferenced records:
+For a static map of georeferenced records:
 
 ``` r
 gbif_map(
   "Bidens andicola",
-  source = "gbif",
+  source = "web",
   mode = "static"
 )
 ```
@@ -89,12 +89,12 @@ For a combined species report, `sacha_report()` joins taxonomic sections, iNatur
 
 ## Data sources and local workflows
 
-The source option is specific to each module:
+The `source` argument uses the same choices where it is available; each module applies them as follows:
 
 | Module | Web source | Local source |
 |:---|:---|:---|
 | ChecklistBank and Catalogue of Life | Accessors query the configured service. | Local source support for downloading and reading ColDP archives is currently under development. |
-| GBIF | `source = "gbif"` queries GBIF for georeferenced occurrence records. | `source = "local"` reads occurrence exports previously saved by the package. |
+| GBIF | `source = "web"` queries GBIF for georeferenced occurrence records. | `source = "local"` reads occurrence exports previously saved by the package. |
 | iNaturalist | `source = "web"` queries iNaturalist observations and photographs. | `source = "local"` uses images and metadata previously saved by the package. |
 
 `gbif_save_occurrences()` saves a local occurrence export for later use by GBIF functions. The export can include many records, so consider the expected data volume before requesting it. `inat_save_images()` saves photographs and associated metadata for later local use. Both types of taxon-specific exports are stored under `sacha_exports/Family_Genus_species` in the selected base directory; iNaturalist files are kept in its `inat` subdirectory.
@@ -113,6 +113,11 @@ classification()
 
 sacha_clear_cache()
 ```
+
+## Related application
+
+`sacha` is being used alongside `pacha` in the Quarto book [*Plantas susceptibles de uso sostenible en la zona andina de la provincia de Cotopaxi, Ecuador*](https://envinatu.github.io/envyura/), which applies both packages to the study of plants and sustainable use in the Andean region.
+
 
 ## Attribution and responsible access
 

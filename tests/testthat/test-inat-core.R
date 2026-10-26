@@ -28,7 +28,7 @@ testthat::test_that("iNaturalist observation searches reject missing taxa and in
       quality_grade = "research",
       place_id = NULL
     ),
-    "Provide 'species'"
+    "Provide .*species.*taxon_id.*observation_id"
   )
   testthat::expect_error(
     sacha:::.inat_web_query(
@@ -107,7 +107,7 @@ testthat::test_that("web observation search uses iNaturalist API v2 photo and pl
     oldest <- .sacha_test_inat_observation(id = 1001L, observed_on = "2026-10-09")
     request <- new.env(parent = emptyenv())
     testthat::local_mocked_bindings(
-      .inat_resolve_taxon = function(species, refresh = FALSE) {
+      .inat_resolve_taxon = function(species, refresh = FALSE, language = "en") {
         list(id = 123L, scientific_name = species, family = "Asteraceae")
       },
       .inat_request_json = function(path, query = list(), fields = NULL) {
@@ -175,7 +175,7 @@ testthat::test_that("large iNaturalist result sets continue with an ascending ID
     requests <- new.env(parent = emptyenv())
     requests$queries <- list()
     testthat::local_mocked_bindings(
-      .inat_resolve_taxon = function(species, refresh = FALSE) {
+      .inat_resolve_taxon = function(species, refresh = FALSE, language = "en") {
         list(id = 123L, scientific_name = species, family = "Asteraceae")
       },
       .inat_request_json = function(path, query = list(), fields = NULL) {

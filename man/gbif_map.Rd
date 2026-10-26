@@ -6,8 +6,8 @@
 \title{Generate a full-extent GBIF occurrence map}
 \usage{
 gbif_map(
-  species,
-  limit = 100000L,
+  species = NULL,
+  limit = 50000L,
   mode = c("interactive", "static"),
   save_occurrences = FALSE,
   export_image = FALSE,
@@ -15,14 +15,17 @@ gbif_map(
   colour = NULL,
   zoom_static = NULL,
   dpi = NULL,
-  ppp = NULL,
   overwrite = TRUE,
-  source = c("gbif", "local")
+  source = c("web", "local"),
+  taxon_id = NULL,
+  generate_doi = FALSE,
+  date = NULL,
+  static_legend_position = "bottomleft"
 )
 
 gbif_map_md(
-  species,
-  limit = 100000L,
+  species = NULL,
+  limit = 50000L,
   mode = NULL,
   save_occurrences = FALSE,
   export_image = FALSE,
@@ -30,31 +33,36 @@ gbif_map_md(
   colour = NULL,
   zoom_static = NULL,
   dpi = NULL,
-  ppp = NULL,
   overwrite = TRUE,
   fig_width = NULL,
   fig_height = NULL,
-  source = c("gbif", "local")
+  source = c("web", "local"),
+  taxon_id = NULL,
+  generate_doi = FALSE,
+  date = NULL,
+  static_legend_position = "bottomleft"
 )
 }
 \arguments{
 \item{species}{A binomial scientific name in the form \code{"Genus species"},
 e.g. \code{"Bidens andicola"}, \code{"Cinchona officinalis"}, or \code{"Puma concolor"}. GBIF must resolve it as an exact species-level name; spelling
-variants and higher-rank matches are rejected.}
+variants and higher-rank matches are rejected. Supply exactly one of
+\code{species} or \code{taxon_id}.}
 
-\item{limit}{Maximum number of georeferenced occurrences used to draw the
-map, an integer between \code{1} and \code{100000}, e.g. \code{100}, \code{500}, or \code{2000}.
+\item{limit}{Maximum number of georeferenced occurrences used to draw and
+save, an integer between \code{1} and \code{100000}, e.g. \code{100}, \code{500}, or \code{2000}.
 With a local source, the first \code{limit} records of the saved export are
-used. Defaults to \code{100000}.}
+used. Defaults to \code{50000}.}
 
 \item{mode}{Map type: \code{"interactive"} (default; a Leaflet widget) or
 \code{"static"} (a ggplot2 map). In \code{gbif_map_md()}, \code{NULL} selects an
 interactive map for HTML output and a static map for other formats.}
 
-\item{save_occurrences}{Logical. If \code{TRUE}, the complete set of
-georeferenced records for the same validated GBIF taxon key is saved as
-\code{occurrences.gpkg} with its provenance file \code{metadata.json} under
-\code{sacha_exports/Family_Genus_species}. Defaults to \code{FALSE}.}
+\item{save_occurrences}{Logical. If \code{TRUE}, up to \code{limit} georeferenced
+records are saved as \code{occurrences.gpkg} under
+\code{sacha_exports/Family_Genus_species}, with \code{metadata.json} describing the
+query. \code{generate_doi = TRUE} adds the official DOI for a registered GBIF
+download. Defaults to \code{FALSE}.}
 
 \item{export_image}{Logical. If \code{TRUE}, the static map is written as a PNG
 file to \code{sacha_exports/Family_Genus_species}. Defaults to \code{FALSE}.}
@@ -74,21 +82,42 @@ the occurrences? It applies to static maps and exported images. When
 \item{dpi}{Resolution of the exported PNG in dots per inch. When \code{NULL},
 the package default resolution is used.}
 
-\item{ppp}{Spanish-language synonym of \code{dpi} (puntos por pulgada). If both
-are supplied, \code{ppp} takes precedence.}
-
 \item{overwrite}{Logical. Should existing output files be replaced? If
 \code{FALSE}, an existing local occurrence export raises an error. Defaults to
 \code{TRUE}.}
 
-\item{source}{Occurrence source: \code{"gbif"} (default) retrieves records from
+\item{source}{Occurrence source: \code{"web"} (default) retrieves records from
 GBIF; \code{"local"} reads a saved export from \code{sacha_exports} under
 \code{directory}.}
 
-\item{fig_width, fig_height}{Figure dimensions in inches for static maps
-produced by \code{gbif_map_md()}. They do not set the size of interactive
-Leaflet maps. When \code{NULL}, static-map dimensions follow the map aspect
-ratio.}
+\item{taxon_id}{A COL XR alphanumeric species usage key, such as \code{"Q2M4"}.
+GBIF resolves the key against the configured checklist and verifies that
+it identifies one species-level taxon. Supply exactly one of \code{taxon_id}
+or \code{species}.}
+
+\item{generate_doi}{Logical. If \code{TRUE} and \code{source = "web"}, create and wait
+for a registered GBIF download, retrieve its DOI, and use at most \code{limit}
+records. This requires GBIF account credentials. If \code{FALSE} (default),
+use the faster occurrence-search API without waiting for a DOI. For a
+local source, no GBIF request is made.}
+
+\item{date}{Optional ISO date or range such as
+\code{"2020-01-01,2021-01-01"}. It filters GBIF occurrence datasets by their
+registry \code{createdDate}, then filters records by the matching dataset keys.
+It does not filter the date on which an occurrence was observed. Local
+exports can use only the same date filter recorded in their metadata.}
+
+\item{static_legend_position}{Position of the static legend as one composed
+unit with its scale bar and north arrow. Applies to static maps and PNGs
+written with \code{export_image = TRUE}, including when \code{mode} is
+\code{"interactive"}: \code{"bottomleft"} (default), \code{"bottom"},
+\code{"bottomright"}, \code{"right"}, \code{"topright"}, \code{"top"}, \code{"topleft"}, or
+\code{"left"}. It does not change the interactive map widget.}
+
+\item{fig_width, fig_height}{Dimensions in inches for static maps produced
+by \code{gbif_map_md()}. When \code{NULL}, the static map dimensions follow its
+aspect ratio. Interactive Leaflet maps use the widget and output
+container's default sizing.}
 }
 \value{
 A Leaflet widget or a ggplot2 object. Paths of the written files
@@ -102,9 +131,10 @@ species, and \code{gbif_map_md()} creates the same map for a markdown-formatted
 report (Quarto or R Markdown).
 }
 \details{
-With \code{source = "gbif"} (default), the supplied binomial is first resolved
-by GBIF as an exact, species-level name in the configured checklist (COL
-Extended Release by default). The resulting taxon key and the same
+With \code{source = "web"} (default), supply exactly one of \code{species} or
+\code{taxon_id}. GBIF resolves the binomial as an exact, species-level name or
+validates the COL XR usage key as an exact species-level taxon. The
+resulting taxon key and the same
 checklist key are used to retrieve records with coordinates. This prevents
 approximate name matches and keeps records tied to one accepted GBIF
 taxonomic concept. With
@@ -113,13 +143,28 @@ taxonomic concept. With
 contacted. Local exports are stored under
 \code{sacha_exports/Family_Genus_species} inside \code{directory}.
 
-Setting \code{save_occurrences = TRUE} retrieves every available georeferenced
-record (independently of \code{limit}) and stores it as a GeoPackage in WGS 84
-(EPSG:4326) with all GBIF fields, together with a JSON file describing the
-exact name match, taxon key, query, retrieval date, coordinate reference
-system, and record count. When
-\code{source = "local"}, the records already reside in a saved export and
-nothing is written.
+Setting \code{save_occurrences = TRUE} stores up to \code{limit} georeferenced
+records as a GeoPackage in WGS 84 (EPSG:4326), together with a JSON file
+describing the exact taxon match, query, date filter, retrieval date,
+coordinate reference system, and record count. By default,
+\code{generate_doi = FALSE} uses the fast GBIF occurrence search and does not wait
+for a registered download or DOI. Set \code{generate_doi = TRUE} to create and wait
+for a registered download; its DOI is recorded in \code{metadata.json} and in the
+map's \code{sacha_gbif_download} attribute. This requires \code{GBIF_USER},
+\code{GBIF_PWD}, and \code{GBIF_EMAIL} credentials. With \code{source = "local"},
+\code{generate_doi} does not contact GBIF and no new export is written.
+
+Configure the GBIF account credentials in the current R session with
+\code{Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password", GBIF_EMAIL = "your_account_email")}. To keep them available in future
+sessions, add the same three variables to your personal \verb{~/.Renviron} file
+and restart R. Do not share or publish that file.
+
+The default \code{limit} of 50,000 is intended to keep routine queries
+manageable. For species with larger occurrence sets, such as
+\verb{Amaranthus hybridus}, reuse a local export or restrict the records with
+\code{date}. For a spatially filtered retrieval, use \code{\link[=gbif_map_crop]{gbif_map_crop()}} or
+\code{\link[=gbif_save_occurrences]{gbif_save_occurrences()}}: country areas and geometric boundaries are sent
+to GBIF before records are returned.
 
 Interactive maps show the scientific name, year, locality, and observer
 (\code{recordedBy}) reported by GBIF for each occurrence. Missing values are
@@ -134,6 +179,18 @@ error explicitly worded as a communication failure is raised. It is
 distinct from the error raised when GBIF responds successfully but holds no
 georeferenced records for the species.
 
+\code{date} selects occurrence datasets by their GBIF registry creation date
+(\code{createdDate}) and then filters records to those datasets; it is not the
+date when an individual occurrence was observed. This registry lookup is
+separate from the occurrence search. GBIF uses the Catalogue of Life
+Extended Release (COL XR) as the taxonomic reference for occurrence
+downloads. When \code{generate_doi = TRUE}, the export's \code{metadata.json} records
+its official download DOI and link. By downloading the data, you acknowledge GBIF's
+\href{https://www.gbif.org/terms/data-user}{data-use agreement}. When citing or
+referring to registered downloads (\code{generate_doi = TRUE}), follow GBIF's
+\href{https://www.gbif.org/citation-guidelines#occDataDownload}{citation guidelines}
+and include the DOI assigned to that specific download in every publication.
+
 In Markdown reports, \code{gbif_map_md()} assigns a stable Quarto figure ID from
 the map type and species name. For \code{"Bidens andicola"}, the full-extent map
 is \code{fig-gbif-map-bidens_andicola}. Use that ID in a cross-reference
@@ -145,14 +202,15 @@ that the generated figure markup is interpreted by the document renderer.
 \examples{
 \donttest{
 map <- gbif_map("Bidens andicola", limit = 100)
+map_by_key <- gbif_map(taxon_id = "Q2M4", limit = 100)
 map
 }
 \dontrun{
 gbif_map("Bidens andicola", save_occurrences = TRUE, export_image = TRUE)
 gbif_map("Bidens andicola", source = "local", mode = "static")
 
-gbif_map_md("Bidens andicola", source = "gbif", mode = "interactive")
-gbif_map_md("Bidens andicola", source = "gbif", mode = "static",
+gbif_map_md("Bidens andicola", source = "web", mode = "interactive")
+gbif_map_md("Bidens andicola", source = "web", mode = "static",
             limit = 500, export_image = TRUE, save_occurrences = TRUE)
 gbif_map_md("Bidens andicola", source = "local", mode = "static",
             limit = 500, directory = getwd(), export_image = TRUE,

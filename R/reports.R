@@ -5,20 +5,24 @@
 #' [gbif_map_crop_md()]. It uses the same species name for both sections and
 #' preserves the output and error handling of those functions.
 #'
-#' Supply `species`, `language`, and any map argument directly through `...`:
-#' `kml`, `crop_area`, `crop_box`, `limit`, `mode`, `save_occurrences`,
-#' `export_image`, `directory`, `colour`, `dpi`, `ppp`, `overwrite`,
+#' Supply `species`, `language`, and `directory` directly; pass map arguments
+#' through `...`: `kml`, `crop_area`, `crop_box`, `limit`, `mode`,
+#' `save_occurrences`, `export_image`, `colour`, `static_legend_position`,
+#' `dpi`, `overwrite`,
 #' `distribution`, `fig_width`, `fig_height`, `source`, and `local_export`.
 #' Alternatively, set shared argument defaults beforehand with
 #' [sacha_arg_configure()]. An argument supplied in the function call takes
 #' precedence over its configured default. The locations text uses
 #' `language`; the map uses the active language in the spatial configuration.
-#' Use [sacha_configure()] to set module defaults.
+#' Use [sacha_configure()] to set module defaults and the shared directory.
 #'
 #' @param species A binomial scientific name in the form `"Genus species"`.
+#' @param directory Common base directory for file-based package functions.
+#'   GBIF map inputs and outputs are read or written under its `sacha_exports`
+#'   subdirectory. Defaults to the current working directory.
 #' @param ... Arguments forwarded to [gbif_map_crop_md()]: `kml`, `crop_area`,
-#'   `crop_box`, `limit`, `mode`, `save_occurrences`, `export_image`,
-#'   `directory`, `colour`, `dpi`, `ppp`, `overwrite`, `distribution`,
+#'   `crop_box`, `limit`, `mode`, `save_occurrences`, `export_image`, `colour`,
+#'   `static_legend_position`, `dpi`, `overwrite`, `distribution`,
 #'   `fig_width`, `fig_height`, `source`, and `local_export`. Their accepted
 #'   values and defaults are documented in that function.
 #' @param language Optional language for the Catalogue of Life locations text.
@@ -34,18 +38,19 @@
 #'
 #' sacha_spatial_report(
 #'   species, language = "en", kml = boundary_file,
-#'   source = "gbif", export_image = TRUE
+#'   source = "web", export_image = TRUE
 #' )
 #'
 #' sacha_arg_configure(
 #'   species = species, language = "en", kml = boundary_file,
-#'   source = "gbif", export_image = TRUE
+#'   source = "web", export_image = TRUE
 #' )
 #' sacha_spatial_report()
 #' sacha_clear_cache()
 #' }
 #' @export
-sacha_spatial_report <- function(species, ..., language = NULL) {
+sacha_spatial_report <- function(species, ..., language = NULL,
+                                directory = getwd()) {
   .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
   location_output <- paste(
     utils::capture.output(locations_md(species = species, language = language)),
@@ -53,11 +58,11 @@ sacha_spatial_report <- function(species, ..., language = NULL) {
   )
   map_arguments <- .sacha_merge_arg_defaults(
     list(...),
-    setdiff(names(formals(gbif_map_crop_md)), c("species", "..."))
+    setdiff(names(formals(gbif_map_crop_md)), c("species", "...", "directory"))
   )
   map_output <- do.call(
     gbif_map_crop_md,
-    c(list(species = species), map_arguments)
+    c(list(species = species, directory = directory), map_arguments)
   )
 
   if (inherits(map_output, "knit_asis")) {
@@ -82,7 +87,7 @@ sacha_spatial_report <- function(species, ..., language = NULL) {
 #' the corresponding `_md` accessor so that the individual formatting and
 #' source-handling rules remain in effect.
 #'
-#' Supply `species`, `language`, `rank`, `save_bib`, and `bib_dir` directly,
+#' Supply `species`, `language`, `rank`, `save_bib`, and `directory` directly,
 #' or set shared argument defaults beforehand with [sacha_arg_configure()].
 #' Values supplied to `sacha_clb_report()` take precedence over configured
 #' defaults.
@@ -95,8 +100,9 @@ sacha_spatial_report <- function(species, ..., language = NULL) {
 #'   help page for accepted values and effects.
 #' @param save_bib Argument forwarded to [references_sp_md()]; see its help
 #'   page for its effect.
-#' @param bib_dir Argument forwarded to [references_sp_md()]; see its help
-#'   page for its effect.
+#' @param directory Common base directory for file-based package functions.
+#'   References are saved under its `sacha_exports` subdirectory when
+#'   `save_bib = TRUE`. Defaults to the current working directory.
 #' @return Invisibly returns the combined Markdown string, which is also
 #'   written to the console for insertion into a rendered document.
 #' @examples
@@ -104,12 +110,12 @@ sacha_spatial_report <- function(species, ..., language = NULL) {
 #' species <- "Genus species"
 #' sacha_clb_report(
 #'   species, language = "en", rank = "family",
-#'   save_bib = FALSE, bib_dir = "bibliography"
+#'   save_bib = FALSE, directory = "bibliography"
 #' )
 #'
 #' sacha_arg_configure(
 #'   species = species, language = "en", rank = "family",
-#'   save_bib = FALSE, bib_dir = "bibliography"
+#'   save_bib = FALSE, directory = "bibliography"
 #' )
 #' sacha_clb_report()
 #' sacha_clear_cache()
@@ -119,7 +125,7 @@ sacha_clb_report <- function(species,
                              language = NULL,
                              rank = NULL,
                              save_bib = FALSE,
-                             bib_dir = ".") {
+                             directory = getwd()) {
   .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
   sections <- list(
     function() sc_full_name_md(species),
@@ -130,7 +136,7 @@ sacha_clb_report <- function(species,
     function() syn_and_comb_md(species, language = language),
     function() locations_md(species, language = language),
     function() references_sp_md(
-      species, language = language, save_bib = save_bib, bib_dir = bib_dir
+      species, language = language, save_bib = save_bib, directory = directory
     )
   )
   rendered_sections <- vapply(sections, function(section) {
@@ -189,14 +195,18 @@ sacha_clb_report <- function(species,
 #'   indexation links.
 #' @param language Optional language code forwarded to accessors that support
 #'   localized output. `NULL` follows each module's active language setting.
+#' @param directory Common base directory for file-based package functions.
+#'   GBIF occurrences and maps, iNaturalist images, and saved references use
+#'   their existing subdirectories under this path. Defaults to the current
+#'   working directory; it can also be set with [sacha_configure()].
 #' @param ... Named arguments forwarded to the relevant underlying functions.
 #'   Supported names are `user_id`, `number_observations`, `observation_id`,
-#'   `image_size`, `verify_local`, `images_directory`, `quality_grade`,
+#'   `image_size`, `verify_local`, `quality_grade`,
 #'   `place_id`, `catalogue_dataset`, `observer_name`, `save_images`,
 #'   `export_comp`, `refresh`, `ncol`, `word_subfigure_width`,
-#'   `latex_subfigure_width`, `identifier`, `rank`, `save_bib`, `bib_dir`,
+#'   `latex_subfigure_width`, `identifier`, `rank`, `save_bib`,
 #'   `kml`, `crop_area`, `crop_box`, `limit`, `mode`, `save_occurrences`,
-#'   `export_image`, `directory`, `colour`, `dpi`, `ppp`, `overwrite`,
+#'   `export_image`, `colour`, `static_legend_position`, `dpi`, `overwrite`,
 #'   `distribution`, `fig_width`, `fig_height`, and `local_export`. Their
 #'   choices, defaults, and effects are documented by the corresponding
 #'   accessors [inat_images_md()], [indexations_md()],
@@ -215,17 +225,18 @@ sacha_clb_report <- function(species,
 sacha_report <- function(species,
                          source = c("local", "web"),
                          language = NULL,
+                         directory = getwd(),
                          ...) {
   .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
   source <- match.arg(source)
   supported <- c(
     "user_id", "number_observations", "observation_id", "image_size",
-    "verify_local", "images_directory", "quality_grade", "place_id",
+    "verify_local", "quality_grade", "place_id",
     "catalogue_dataset", "observer_name", "save_images", "export_comp",
     "refresh", "ncol", "word_subfigure_width", "latex_subfigure_width",
-    "identifier", "rank", "save_bib", "bib_dir", "kml", "crop_area",
+    "identifier", "rank", "save_bib", "kml", "crop_area",
     "crop_box", "limit", "mode", "save_occurrences", "export_image",
-    "directory", "colour", "dpi", "ppp", "overwrite", "distribution",
+    "colour", "static_legend_position", "dpi", "overwrite", "distribution",
     "fig_width", "fig_height", "local_export"
   )
   supplied <- .sacha_merge_arg_defaults(list(...), supported)
@@ -247,17 +258,17 @@ sacha_report <- function(species,
   take <- function(keys) supplied[intersect(keys, names(supplied))]
   inat_keys <- c(
     "user_id", "number_observations", "observation_id", "image_size",
-    "verify_local", "images_directory", "quality_grade", "place_id",
+    "verify_local", "quality_grade", "place_id",
     "catalogue_dataset", "observer_name", "save_images", "export_comp",
     "refresh", "ncol", "word_subfigure_width", "latex_subfigure_width"
   )
   map_keys <- c(
     "kml", "crop_area", "crop_box", "limit", "mode", "save_occurrences",
-    "export_image", "directory", "colour", "dpi", "ppp", "overwrite",
+    "export_image", "colour", "static_legend_position", "dpi", "overwrite",
     "distribution", "fig_width", "fig_height", "local_export"
   )
   image_args <- c(
-    list(species = species),
+    list(species = species, directory = directory),
     if (!is.null(language)) list(language = language),
     take(inat_keys),
     list(source = source)
@@ -287,11 +298,10 @@ sacha_report <- function(species,
     capture_section(locations_md, section_args(character()))
   )
 
-  map_source <- if (identical(source, "web")) "gbif" else "local"
   map_args <- c(
-    list(species = species),
+    list(species = species, directory = directory),
     take(map_keys),
-    list(source = map_source)
+    list(source = source)
   )
   map_capture <- character()
   map_output <- NULL
@@ -305,9 +315,9 @@ sacha_report <- function(species,
   }
 
   references_args <- c(
-    list(species = species),
+    list(species = species, directory = directory),
     if (!is.null(language)) list(language = language),
-    take(c("save_bib", "bib_dir"))
+    take("save_bib")
   )
   references_output <- capture_section(references_sp_md, references_args)
   report_sections <- c(text_sections, map_markdown, references_output)

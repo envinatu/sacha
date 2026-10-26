@@ -1,7 +1,7 @@
 testthat::test_that("ChecklistBank record normalization feeds stable accessors and caches one fetch", {
   .sacha_test_with_state({
     calls <- 0L
-    sacha::sacha_configure(global = list(fetcher = function(species, config) {
+    sacha::sacha_configure(clb = list(fetcher = function(species, config) {
       calls <<- calls + 1L
       .sacha_test_global_record(species)
     }))

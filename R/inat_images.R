@@ -5,7 +5,6 @@
 .sacha_inat_defaults$user_agent <- "sacha-r-package/1.0 (iNaturalist image client)"
 .sacha_inat_defaults$language <- "en"
 .sacha_inat_defaults$default_quality_grade <- "research"
-.sacha_inat_defaults$default_images_directory <- "."
 .sacha_inat_defaults$default_image_size <- "medium"
 .sacha_inat_defaults$default_save_image_size <- "medium"
 .sacha_inat_defaults$cache_max_entries <- 200L
@@ -113,6 +112,34 @@
   languages
 }
 
+.inat_argument_defaults <- function(save_image_size = FALSE) {
+  image_size_options <- if (isTRUE(save_image_size)) {
+    c("original", "large", "medium", "small", "square")
+  } else {
+    c("medium", "large", "original", "small", "square")
+  }
+  default_image_size <- if (isTRUE(save_image_size)) {
+    .sacha_inat_defaults$default_save_image_size
+  } else {
+    .sacha_inat_defaults$default_image_size
+  }
+  language_choices <- .inat_language_choices(
+    preferred = .sacha_inat_defaults$language
+  )
+
+  list(
+    image_size = default_image_size,
+    image_size_choices = c(
+      default_image_size,
+      setdiff(image_size_options, default_image_size)
+    ),
+    quality_grade = .sacha_inat_defaults$default_quality_grade,
+    catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
+    language = language_choices[[1L]],
+    language_choices = language_choices
+  )
+}
+
 .inat_load_language <- function(language, refresh = FALSE) {
   key <- .inat_cache_key("language-dictionary", language)
 
@@ -214,6 +241,31 @@
   }
 
   species
+}
+
+.inat_normalize_taxon_id <- function(
+    taxon_id,
+    allow_null = FALSE,
+    language = .sacha_inat_defaults$language
+) {
+  if (is.null(taxon_id) && isTRUE(allow_null)) {
+    return(NULL)
+  }
+
+  if (is.numeric(taxon_id) && length(taxon_id) == 1L && !is.na(taxon_id) &&
+      is.finite(taxon_id) && taxon_id > 0 && taxon_id == floor(taxon_id)) {
+    taxon_id <- format(taxon_id, scientific = FALSE, trim = TRUE)
+  } else if (is.character(taxon_id) && length(taxon_id) == 1L && !is.na(taxon_id)) {
+    taxon_id <- trimws(taxon_id)
+  } else {
+    stop(.inat_text("taxon_id_invalid", language), call. = FALSE)
+  }
+
+  if (!grepl("^[1-9][0-9]*$", taxon_id)) {
+    stop(.inat_text("taxon_id_invalid", language), call. = FALSE)
+  }
+
+  taxon_id
 }
 
 .inat_safe_name <- function(x) {
@@ -365,7 +417,6 @@
     user_agent = NULL,
     language = NULL,
     default_quality_grade = NULL,
-    default_images_directory = NULL,
     default_image_size = NULL,
     default_save_image_size = NULL,
     cache_max_entries = NULL,
@@ -382,7 +433,6 @@
     user_agent = user_agent,
     language = language,
     default_quality_grade = default_quality_grade,
-    default_images_directory = default_images_directory,
     default_image_size = default_image_size,
     default_save_image_size = default_save_image_size,
     cache_max_entries = cache_max_entries,
@@ -450,17 +500,6 @@
            call. = FALSE)
     }
     .sacha_inat_defaults$default_quality_grade <- default_quality_grade
-  }
-
-  if (!is.null(default_images_directory)) {
-    if (!is.character(default_images_directory) ||
-        length(default_images_directory) != 1L || is.na(default_images_directory) ||
-        !nzchar(trimws(default_images_directory))) {
-      stop("`default_images_directory` must be one non-empty path.", call. = FALSE)
-    }
-    .sacha_inat_defaults$default_images_directory <- path.expand(
-      trimws(default_images_directory)
-    )
   }
 
   image_sizes <- c("medium", "large", "original", "small", "square")
@@ -601,6 +640,7 @@
 }
 
 .inat_taxon_by_id <- function(taxon_id, refresh = FALSE) {
+  taxon_id <- .inat_normalize_taxon_id(taxon_id)
   key <- .inat_cache_key("taxon-id", taxon_id)
 
   .inat_cached(key, refresh, function() {
@@ -624,7 +664,7 @@
   })
 }
 
-.inat_resolve_taxon <- function(species, refresh = FALSE) {
+.inat_resolve_taxon <- function(species, refresh = FALSE, language = "en") {
   species <- .inat_normalize_species(species)
   key <- .inat_cache_key("taxon-name", tolower(species))
 
@@ -647,14 +687,37 @@
       character(1)
     )
 
-    exact_match <- which(candidate_names == tolower(species))
+    candidate_ranks <- vapply(
+      candidates,
+      function(candidate) tolower(.inat_scalar(candidate$rank, "")),
+      character(1)
+    )
+    exact_match <- which(
+      candidate_names == tolower(species) & candidate_ranks == "species"
+    )
 
     if (length(exact_match) == 0L) {
       return(NULL)
     }
 
+    candidate_ids <- unique(vapply(
+      candidates[exact_match],
+      function(candidate) .inat_scalar(candidate$id, ""),
+      character(1)
+    ))
+    candidate_ids <- candidate_ids[nzchar(candidate_ids)]
+    if (length(candidate_ids) == 0L) {
+      return(NULL)
+    }
+    if (length(candidate_ids) > 1L) {
+      stop(
+        .inat_text("taxon_name_ambiguous", language),
+        call. = FALSE
+      )
+    }
+
     .inat_taxon_by_id(
-      .inat_scalar(candidates[[exact_match[[1L]]]]$id),
+      candidate_ids[[1L]],
       refresh = refresh
     )
   })
@@ -903,13 +966,21 @@
     place_id,
     language = "en",
     use_placeholders = TRUE,
-    refresh = FALSE
+    refresh = FALSE,
+    taxon_id = NULL
 ) {
   species <- .inat_normalize_species(species, allow_null = TRUE)
+  taxon_id <- .inat_normalize_taxon_id(
+    taxon_id, allow_null = TRUE, language = language
+  )
 
-  if (is.null(species) && is.null(observation_id)) {
+  if (!is.null(species) && !is.null(taxon_id)) {
+    stop(.inat_text("taxon_selector_conflict", language), call. = FALSE)
+  }
+
+  if (is.null(species) && is.null(taxon_id) && is.null(observation_id)) {
     stop(
-      "Provide 'species' or at least one 'observation_id'.",
+      .inat_text("taxon_selector_required", language),
       call. = FALSE
     )
   }
@@ -923,10 +994,16 @@
   }
 
   number_observations <- as.integer(number_observations)
-  requested_taxon <- if (!is.null(species)) {
-    .inat_resolve_taxon(species, refresh = refresh)
+  requested_taxon <- if (!is.null(taxon_id)) {
+    .inat_taxon_by_id(taxon_id, refresh = refresh)
+  } else if (!is.null(species)) {
+    .inat_resolve_taxon(species, refresh = refresh, language = language)
   } else {
     NULL
+  }
+  if (!is.null(taxon_id) &&
+      !identical(tolower(.inat_scalar(requested_taxon$rank, "")), "species")) {
+    stop(.inat_text("taxon_id_rank_invalid", language), call. = FALSE)
   }
 
   if (!is.null(observation_id)) {
@@ -938,21 +1015,8 @@
       refresh = refresh
     )
 
-    if (is.null(species)) {
-      observation_taxon_id <- .inat_scalar(observations[[1L]]$taxon$id)
-
-      if (is.null(observation_taxon_id)) {
-        stop(
-          "The selected observation has no resolvable iNaturalist taxon.",
-          call. = FALSE
-        )
-      }
-
-      requested_taxon <- .inat_taxon_by_id(
-        observation_taxon_id,
-        refresh = refresh
-      )
-
+    if (!is.null(requested_taxon)) {
+      observation_taxon_id <- as.character(requested_taxon$id)
       observed_taxon_ids <- vapply(
         observations,
         function(observation) .inat_scalar(observation$taxon$id, ""),
@@ -965,17 +1029,13 @@
 
       if (length(mismatched) > 0L) {
         stop(
-          sprintf(
-            paste(
-              "The following 'observation_id' values do not share the",
-              "iNaturalist taxon of observation %s: %s."
-            ),
+          sprintf(.inat_text("observation_taxon_mismatch", language),
             observation_ids[[1L]], paste(mismatched, collapse = ", ")
           ),
           call. = FALSE
         )
       }
-    } else {
+    } else if (!is.null(species)) {
       observed_names <- vapply(
         observations,
         function(observation) .inat_scalar(observation$taxon$name, ""),
@@ -992,19 +1052,41 @@
         )
       }
 
-      if (is.null(requested_taxon)) {
-        observation_taxon_id <- .inat_scalar(observations[[1L]]$taxon$id)
-
-        if (is.null(observation_taxon_id)) {
-          stop(
-            "The selected observation has no resolvable iNaturalist taxon.",
-            call. = FALSE
-          )
-        }
-
-        requested_taxon <- .inat_taxon_by_id(
-          observation_taxon_id,
-          refresh = refresh
+      observation_taxon_id <- .inat_scalar(observations[[1L]]$taxon$id)
+      if (is.null(observation_taxon_id)) {
+        stop(
+          "The selected observation has no resolvable iNaturalist taxon.",
+          call. = FALSE
+        )
+      }
+      requested_taxon <- .inat_taxon_by_id(
+        observation_taxon_id,
+        refresh = refresh
+      )
+      if (!identical(tolower(.inat_scalar(requested_taxon$rank, "")), "species")) {
+        stop(.inat_text("species_taxon_rank_invalid", language), call. = FALSE)
+      }
+    } else {
+      observation_taxon_id <- .inat_scalar(observations[[1L]]$taxon$id)
+      if (is.null(observation_taxon_id)) {
+        stop(
+          "The selected observation has no resolvable iNaturalist taxon.",
+          call. = FALSE
+        )
+      }
+      requested_taxon <- .inat_taxon_by_id(
+        observation_taxon_id,
+        refresh = refresh
+      )
+      observed_taxon_ids <- vapply(
+        observations,
+        function(observation) .inat_scalar(observation$taxon$id, ""),
+        character(1)
+      )
+      if (any(observed_taxon_ids != as.character(observation_taxon_id))) {
+        stop(
+          .inat_text("observation_ids_taxon_mismatch", language),
+          call. = FALSE
         )
       }
     }
@@ -1100,13 +1182,12 @@
       fetched
     })
 
-    observations <- Filter(
-      function(observation) identical(
-        tolower(.inat_scalar(observation$taxon$name, "")),
-        tolower(species)
-      ),
-      observations
-    )
+    observations <- Filter(function(observation) {
+      identical(
+        .inat_scalar(observation$taxon$id, ""),
+        as.character(requested_taxon$id)
+      )
+    }, observations)
 
   }
 
@@ -1144,7 +1225,7 @@
   list(
     source = "web",
     taxon = requested_taxon,
-    requested_species = species,
+    requested_species = requested_taxon$scientific_name,
     records = records
   )
 }
@@ -1173,9 +1254,9 @@
   query
 }
 
-.inat_taxon_directory <- function(images_directory, family, species) {
+.inat_taxon_directory <- function(directory, family, species) {
   .sacha_taxon_export_directory(
-    images_directory,
+    directory,
     family,
     species,
     subdirectory = "inat"
@@ -1209,7 +1290,7 @@
 
 .inat_save_record_images <- function(
     record,
-    images_directory,
+    directory,
     image_size,
     include_auxiliary,
     overwrite,
@@ -1218,7 +1299,7 @@
     language
 ) {
   directory <- .inat_taxon_directory(
-    images_directory = images_directory,
+    directory = directory,
     family = record$family,
     species = record$scientific_name
   )
@@ -1361,19 +1442,24 @@
     species,
     number_observations,
     observation_id = NULL,
-    images_directory = .sacha_inat_defaults$default_images_directory,
+    directory = getwd(),
     user_id = NULL,
     quality_grade = NULL,
-    place_id = NULL
+    place_id = NULL,
+    taxon_id = NULL,
+    language = "en"
 ) {
   species <- .inat_normalize_species(species, allow_null = TRUE)
+  taxon_id <- .inat_normalize_taxon_id(
+    taxon_id, allow_null = TRUE, language = language
+  )
 
-  images_root <- .sacha_exports_root(images_directory)
-  legacy_root <- if (identical(images_directory, ".") ||
-                     identical(images_directory, getwd())) {
-    file.path(images_directory, "images")
+  images_root <- .sacha_exports_root(directory)
+  legacy_root <- if (identical(directory, ".") ||
+                     identical(directory, getwd())) {
+    file.path(directory, "images")
   } else {
-    images_directory
+    directory
   }
   search_roots <- unique(c(images_root, legacy_root))
   search_roots <- search_roots[dir.exists(search_roots)]
@@ -1431,6 +1517,12 @@
 
     if (!is.null(species) &&
         !identical(tolower(record_species), tolower(species))) {
+      next
+    }
+
+    if (!is.null(taxon_id) && !identical(
+      .inat_scalar(record$taxon_id, ""), taxon_id
+    )) {
       next
     }
 
@@ -1537,7 +1629,7 @@
       scientific_name = .inat_scalar(records[[1L]]$scientific_name),
       family = .inat_scalar(records[[1L]]$family)
     ),
-    requested_species = species,
+    requested_species = .inat_scalar(records[[1L]]$scientific_name),
     records = records
   )
 }
@@ -1569,13 +1661,21 @@
     place_id,
     source,
     verify_local,
-    images_directory,
+    directory,
     catalogue_dataset,
     language,
     refresh,
-    use_placeholders = TRUE
+    use_placeholders = TRUE,
+    taxon_id = NULL
 ) {
   source <- match.arg(source, c("web", "local"))
+  species <- .inat_normalize_species(species, allow_null = TRUE)
+  taxon_id <- .inat_normalize_taxon_id(
+    taxon_id, allow_null = TRUE, language = language
+  )
+  if (!is.null(species) && !is.null(taxon_id)) {
+    stop(.inat_text("taxon_selector_conflict", language), call. = FALSE)
+  }
 
   local_query <- NULL
 
@@ -1584,10 +1684,12 @@
       species = species,
       number_observations = number_observations,
       observation_id = observation_id,
-      images_directory = images_directory,
+      directory = directory,
       user_id = user_id,
       quality_grade = quality_grade,
-      place_id = place_id
+      place_id = place_id,
+      taxon_id = taxon_id,
+      language = language
     )
 
     if (.inat_local_query_is_sufficient(
@@ -1612,7 +1714,8 @@
     place_id = place_id,
     language = language,
     use_placeholders = use_placeholders,
-    refresh = refresh
+    refresh = refresh,
+    taxon_id = taxon_id
   )
 
   .inat_attach_authorship(
@@ -1645,25 +1748,52 @@
 
 #' Save iNaturalist images and reproducible local metadata
 #'
-#' Downloads the primary photograph and, by default, all auxiliary photographs
+#' Downloads the primary photograph and, when requested, all auxiliary photographs
 #' associated with selected iNaturalist observations. Each observation receives
 #' a JSON metadata file containing the standardised taxonomic, licensing,
 #' locality, observer, and source-URL information required to reproduce the
 #' corresponding scientific figure without querying the web again.
+#' The iNaturalist API is intended for small or medium requests; use observation
+#' exports for bulk extraction. See
+#' <https://www.inaturalist.org/pages/api+recommended+practices>.
 #'
 #' Images and their metadata are organised under
-#' `sacha_exports/Family_Genus_species/inat/` within `images_directory`,
+#' `sacha_exports/Family_Genus_species/inat/` within `directory`,
 #' preserving the package's taxonomic directory convention while separating
 #' iNaturalist files from exports produced by other package modules.
 #'
 #' @inheritParams inat_images
 #' @param observation_id Optional iNaturalist observation identifier or vector
-#'   of identifiers. When supplied with `species`, the taxonomic identity is
-#'   verified; when supplied alone, all identifiers are cross-checked against
-#'   a single common taxon.
+#'   of identifiers. When supplied with `species` or `taxon_id`, the taxonomic
+#'   identity is verified; when supplied alone, all identifiers are
+#'   cross-checked against a single common taxon.
 #' @param include_auxiliary Logical; save all photographs of each observation
-#'   when `TRUE`, or only the primary photograph when `FALSE`.
+#'   when `TRUE`, or only the primary photograph when `FALSE` (default).
 #' @param overwrite Logical; overwrite existing local image files.
+#' @details
+#' When omitted, `image_size`, `quality_grade`, `catalogue_dataset`, and
+#' `language` use the active iNaturalist settings from
+#' `sacha_configure(inat = ...)`. For this function, `image_size` follows
+#' `default_save_image_size` (initially `"medium"`). An explicit function
+#' argument takes precedence over `sacha_arg_configure()`; a shared argument
+#' default takes precedence over the module setting.
+#' @usage
+#' inat_save_images(
+#'   species = NULL,
+#'   user_id = NULL,
+#'   number_observations = 1L,
+#'   observation_id = NULL,
+#'   image_size = NULL,
+#'   include_auxiliary = FALSE,
+#'   directory = getwd(),
+#'   quality_grade = NULL,
+#'   place_id = NULL,
+#'   catalogue_dataset = NULL,
+#'   language = NULL,
+#'   overwrite = FALSE,
+#'   refresh = FALSE,
+#'   taxon_id = NULL
+#' )
 #'
 #' @return A data frame documenting saved observations, folders, metadata files,
 #'   and the number of successfully available images.
@@ -1671,32 +1801,41 @@
 #'
 #' @examples
 #' \dontrun{
-#' inat_save_images("Genus species", number_observations = 2)
-#'
-#' inat_save_images(observation_id = c(123456, 123457))
+#' inat_save_images("Bidens andicola", user_id = "marceloamores")
+#' inat_images("Bidens andicola", user_id = "marceloamores",
+#'             source = "local")
 #' }
 inat_save_images <- function(
     species = NULL,
     user_id = NULL,
     number_observations = 1L,
     observation_id = NULL,
-    image_size = c(
-      .sacha_inat_defaults$default_save_image_size,
-      setdiff(c("original", "large", "medium", "small", "square"),
-              .sacha_inat_defaults$default_save_image_size)
-    ),
-    include_auxiliary = TRUE,
-    images_directory = .sacha_inat_defaults$default_images_directory,
-    quality_grade = .sacha_inat_defaults$default_quality_grade,
+    image_size = NULL,
+    include_auxiliary = FALSE,
+    directory = getwd(),
+    quality_grade = NULL,
     place_id = NULL,
-    catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
-    language = .inat_language_choices(preferred = .sacha_inat_defaults$language),
+    catalogue_dataset = NULL,
+    language = NULL,
     overwrite = FALSE,
-    refresh = FALSE
+    refresh = FALSE,
+    taxon_id = NULL
 ) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  language <- match.arg(language)
-  image_size <- match.arg(image_size)
+  missing_image_size <- missing(image_size)
+  missing_quality_grade <- missing(quality_grade)
+  missing_catalogue_dataset <- missing(catalogue_dataset)
+  missing_language <- missing(language)
+  call <- match.call(expand.dots = FALSE)
+  defaults <- .inat_argument_defaults(save_image_size = TRUE)
+
+  if (missing_image_size) image_size <- defaults$image_size
+  if (missing_quality_grade) quality_grade <- defaults$quality_grade
+  if (missing_catalogue_dataset) catalogue_dataset <- defaults$catalogue_dataset
+  if (missing_language) language <- defaults$language
+
+  .sacha_apply_arg_defaults(environment(), call, names(formals(sys.function())))
+  language <- match.arg(language, choices = defaults$language_choices)
+  image_size <- match.arg(image_size, choices = defaults$image_size_choices)
 
   query <- .inat_retrieve(
     species = species,
@@ -1707,11 +1846,12 @@ inat_save_images <- function(
     place_id = place_id,
     source = "web",
     verify_local = FALSE,
-    images_directory = images_directory,
+    directory = directory,
     catalogue_dataset = catalogue_dataset,
     language = language,
     refresh = refresh,
-    use_placeholders = TRUE
+    use_placeholders = TRUE,
+    taxon_id = taxon_id
   )
 
   if (length(query$records) == 0L) {
@@ -1730,6 +1870,7 @@ inat_save_images <- function(
     user_id = user_id,
     number_observations = number_observations,
     observation_id = observation_id,
+    taxon_id = query$taxon$id,
     quality_grade = quality_grade,
     place_id = place_id,
     catalogue_dataset = catalogue_dataset
@@ -1738,11 +1879,11 @@ inat_save_images <- function(
   saved <- lapply(query$records, function(record) {
     .inat_save_record_images(
       record = record,
-      images_directory = images_directory,
+      directory = directory,
       image_size = image_size,
       include_auxiliary = include_auxiliary,
       overwrite = overwrite,
-      requested_species = species,
+      requested_species = query$requested_species,
       query_parameters = query_parameters,
       language = language
     )
@@ -1765,17 +1906,18 @@ inat_save_images <- function(
     image_size,
     source,
     verify_local,
-    images_directory,
+    directory,
     quality_grade,
     place_id,
     catalogue_dataset,
     language,
     observer_name,
     save_images = FALSE,
-    include_auxiliary = TRUE,
+    include_auxiliary = FALSE,
     overwrite = FALSE,
     refresh,
-    use_placeholders
+    use_placeholders,
+    taxon_id = NULL
 ) {
   if (length(number_observations) != 1L ||
       is.na(number_observations) ||
@@ -1793,11 +1935,12 @@ inat_save_images <- function(
     place_id = place_id,
     source = source,
     verify_local = verify_local,
-    images_directory = images_directory,
+    directory = directory,
     catalogue_dataset = catalogue_dataset,
     language = language,
     refresh = refresh,
-    use_placeholders = use_placeholders
+    use_placeholders = use_placeholders,
+    taxon_id = taxon_id
   )
 
   saved_files <- NULL
@@ -1805,13 +1948,14 @@ inat_save_images <- function(
     saved_files <- lapply(query$records, function(record) {
       .inat_save_record_images(
         record = record,
-        images_directory = images_directory,
+        directory = directory,
         image_size = image_size,
         include_auxiliary = include_auxiliary,
         overwrite = overwrite,
-        requested_species = species,
+        requested_species = query$requested_species,
         query_parameters = list(
           user_id = user_id,
+          taxon_id = query$taxon$id,
           number_observations = number_observations,
           observation_id = observation_id,
           quality_grade = quality_grade,
@@ -1822,9 +1966,11 @@ inat_save_images <- function(
     })
     for (index in seq_along(query$records)) {
       record <- query$records[[index]]
-      directory <- .inat_taxon_directory(images_directory, record$family, record$scientific_name)
+      taxon_directory <- .inat_taxon_directory(
+        directory, record$family, record$scientific_name
+      )
       matches <- list.files(
-        directory,
+        taxon_directory,
         pattern = paste0("^", record$observation_id, "-1-", image_size, "\\."),
         full.names = TRUE
       )
@@ -1865,8 +2011,8 @@ inat_save_images <- function(
 
 #' Retrieve iNaturalist photographs
 #'
-#' Finds observations for a scientific name or observation identifier and
-#' returns their licensed photographs with taxonomic, observer, locality,
+#' Finds observations by scientific name, iNaturalist taxon ID, or observation
+#' identifier and returns their licensed photographs with taxonomic, observer, locality,
 #' source, and caption metadata. Results are ordered by observed date, newest
 #' first; records without an observed date follow dated records. The default
 #' search uses Research Grade
@@ -1890,46 +2036,61 @@ inat_save_images <- function(
 #' permanent block. The default session thresholds are 4.5 GB per hour and
 #' 21.5 GB per day; they can be adjusted within the API's stated limits with
 #' [sacha_configure()]. Accounting is per R session and cannot include
-#' downloads from other processes or machines using the same network. See
+#' downloads from other processes or machines using the same network. The API
+#' is intended for small or medium requests; use iNaturalist observation
+#' exports for bulk extraction. See
 #' <https://www.inaturalist.org/pages/api+recommended+practices> and
 #' <https://api.inaturalist.org/v2/docs/>.
 #'
 #' @param species Optional scientific name, normally written as "Genus species".
-#'   Supply either species or observation_id.
+#'   It is matched exactly (case-insensitive) to a species-rank taxon. Supply
+#'   either `species` or `taxon_id`; `observation_id` may be used alone or with
+#'   either selector.
+#' @param taxon_id Optional positive iNaturalist taxon ID (numeric or numeric
+#'   text) at species rank. It queries that taxon directly without resolving a
+#'   name. Observations are checked against the exact taxon ID. Local searches
+#'   use the saved taxon ID and retain the existing directory structure.
 #' @param user_id Optional iNaturalist login used to restrict a species search.
 #'   NULL includes observations from all users.
 #' @param number_observations Positive integer giving the maximum number of
 #'   observations to retrieve; defaults to 1.
 #' @param observation_id Optional numeric observation identifier or vector.
-#'   When supplied with species, each observation is checked against that
-#'   taxon. When supplied alone, all IDs must refer to one taxon.
-#' @param image_size Image variant: medium (default), large, original, small,
-#'   or square.
+#'   When supplied with `species` or `taxon_id`, each observation is checked
+#'   against that taxon. When supplied alone, all IDs must refer to one taxon.
+#' @param image_size Image variant: `"medium"`, `"large"`, `"original"`,
+#'   `"small"`, or `"square"`. When omitted, the function uses the configured
+#'   image size; for `inat_images()` and `inat_images_md()` this is
+#'   `default_image_size`, initially `"medium"`. `inat_save_images()` uses
+#'   `default_save_image_size`, also initially `"medium"`.
 #' @param source "web" queries the API; "local" uses only images and metadata
 #'   previously saved under
-#'   `images_directory/sacha_exports/Family_Genus_species/inat`.
+#'   `directory/sacha_exports/Family_Genus_species/inat`.
 #' @param verify_local If TRUE, use a complete local archive first and query
 #'   the API only when the archive cannot satisfy the request.
-#' @param images_directory Base directory under which the package creates or
+#' @param directory Base directory under which the package creates or
 #'   searches `sacha_exports/Family_Genus_species/inat`. Defaults to the
 #'   working directory. Existing archives in the former `images` directory
 #'   and earlier taxon-directory layout remain readable when using the default
 #'   path.
-#' @param quality_grade iNaturalist observation quality filter. "research"
-#'   (default) excludes casual observations; "needs_id" selects observations
-#'   awaiting community identification. Valid API values are research,
-#'   needs_id, and casual.
+#' @param quality_grade iNaturalist observation quality filter. When omitted,
+#'   the configured `default_quality_grade` is used (initially `"research"`).
+#'   Valid API values are `"research"`, `"needs_id"`, and `"casual"`.
 #' @param place_id Optional numeric iNaturalist place identifier.
 #' @param catalogue_dataset ChecklistBank dataset identifier used to obtain
-#'   taxonomic authorship.
-#' @param language Caption language. English is the default; Spanish and other
-#'   installed inst/lang language files are also accepted.
+#'   taxonomic authorship. When omitted, the configured dataset is used
+#'   (initially `"3LXR"`).
+#' @param language Caption language. When omitted, the configured iNaturalist
+#'   language is used (initially English). Spanish and other installed
+#'   `inst/lang` language files are also accepted.
 #' @param observer_name Optional replacement for the iNaturalist observer name
 #'   in captions.
 #' @param save_images If TRUE, download and save the selected photographs and
 #'   JSON metadata to `sacha_exports/Family_Genus_species/inat`, using the same
 #'   layout as [inat_save_images()]. Saved images are immediately available to
 #'   `source = "local"` and `verify_local = TRUE`.
+#' @param include_auxiliary If TRUE, save all photographs associated with each
+#'   selected observation when `save_images = TRUE`; otherwise, save only the
+#'   primary photograph (default).
 #' @param export_comp If TRUE, save only the PNG composition to
 #'   `sacha_exports/Family_Genus_species/inat`. This does not save source
 #'   photographs or their metadata.
@@ -1939,6 +2100,34 @@ inat_save_images <- function(
 #'   default 2.
 #' @param word_subfigure_width Width of DOCX subfigures; default "3in".
 #' @param latex_subfigure_width Width of PDF/LaTeX subfigures; default "86%".
+#' @details
+#' When omitted, `image_size`, `quality_grade`, `catalogue_dataset`, and
+#' `language` use the active iNaturalist settings from
+#' `sacha_configure(inat = ...)`. For `inat_images()` and `inat_images_md()`,
+#' `image_size` follows `default_image_size`. An explicit function argument
+#' takes precedence over `sacha_arg_configure()`; a shared argument default
+#' takes precedence over the module setting.
+#' @usage
+#' inat_images(
+#'   species = NULL,
+#'   user_id = NULL,
+#'   number_observations = 1L,
+#'   observation_id = NULL,
+#'   image_size = NULL,
+#'   source = c("web", "local"),
+#'   verify_local = FALSE,
+#'   directory = getwd(),
+#'   quality_grade = NULL,
+#'   place_id = NULL,
+#'   catalogue_dataset = NULL,
+#'   language = NULL,
+#'   observer_name = NULL,
+#'   save_images = FALSE,
+#'   include_auxiliary = FALSE,
+#'   export_comp = FALSE,
+#'   refresh = FALSE,
+#'   taxon_id = NULL
+#' )
 #'
 #' @return inat_images() returns the selected observations and their image metadata.
 #'   Printing the result shows a concise observation summary. inat_images_md()
@@ -1975,44 +2164,48 @@ inat_save_images <- function(
 #'
 #' @examples
 #' \dontrun{
-#' inat_images("Bidens andicola")
-#' inat_images("Bidens andicola", user_id = "observer_login",
-#'             place_id = 1234, number_observations = 5,
-#'             image_size = "large", source = "web")
-#' inat_images("Bidens andicola", save_images = TRUE, export_comp = TRUE)
-#' inat_images("Bidens andicola", source = "local")
-#' inat_images("Bidens andicola", verify_local = TRUE, place_id = 1234)
-#' inat_images("Bidens andicola", quality_grade = "needs_id",
-#'             observer_name = "Observer name", language = "en",
-#'             images_directory = ".", refresh = TRUE,
-#'             catalogue_dataset = "3LXR")
-#' inat_images(observation_id = 123456, image_size = "original")
+#' inat_images("Bidens andicola", user_id = "marceloamores")
+#'
+#' inat_images("Bidens andicola", user_id = "marceloamores",
+#'             save_images = TRUE)
+#' inat_images("Bidens andicola", user_id = "marceloamores",
+#'             source = "local")
 #' }
 inat_images <- function(
     species = NULL,
     user_id = NULL,
     number_observations = 1L,
     observation_id = NULL,
-    image_size = c(
-      .sacha_inat_defaults$default_image_size,
-      setdiff(c("medium", "large", "original", "small", "square"),
-              .sacha_inat_defaults$default_image_size)
-    ),
+    image_size = NULL,
     source = c("web", "local"),
     verify_local = FALSE,
-    images_directory = .sacha_inat_defaults$default_images_directory,
-    quality_grade = .sacha_inat_defaults$default_quality_grade,
+    directory = getwd(),
+    quality_grade = NULL,
     place_id = NULL,
-    catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
-    language = .inat_language_choices(preferred = .sacha_inat_defaults$language),
+    catalogue_dataset = NULL,
+    language = NULL,
     observer_name = NULL,
     save_images = FALSE,
+    include_auxiliary = FALSE,
     export_comp = FALSE,
-    refresh = FALSE
+    refresh = FALSE,
+    taxon_id = NULL
 ) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  language <- match.arg(language)
-  image_size <- match.arg(image_size)
+  missing_image_size <- missing(image_size)
+  missing_quality_grade <- missing(quality_grade)
+  missing_catalogue_dataset <- missing(catalogue_dataset)
+  missing_language <- missing(language)
+  call <- match.call(expand.dots = FALSE)
+  defaults <- .inat_argument_defaults()
+
+  if (missing_image_size) image_size <- defaults$image_size
+  if (missing_quality_grade) quality_grade <- defaults$quality_grade
+  if (missing_catalogue_dataset) catalogue_dataset <- defaults$catalogue_dataset
+  if (missing_language) language <- defaults$language
+
+  .sacha_apply_arg_defaults(environment(), call, names(formals(sys.function())))
+  language <- match.arg(language, choices = defaults$language_choices)
+  image_size <- match.arg(image_size, choices = defaults$image_size_choices)
   source <- match.arg(source)
   if (!is.logical(save_images) || length(save_images) != 1L || is.na(save_images)) {
     stop("'save_images' must be TRUE or FALSE.", call. = FALSE)
@@ -2032,15 +2225,17 @@ inat_images <- function(
       image_size = image_size,
       source = source,
       verify_local = verify_local,
-      images_directory = images_directory,
+      directory = directory,
       quality_grade = quality_grade,
       place_id = place_id,
       catalogue_dataset = catalogue_dataset,
       language = language,
       observer_name = observer_name,
       save_images = save_images,
+      include_auxiliary = include_auxiliary,
       refresh = refresh,
-      use_placeholders = TRUE
+      use_placeholders = TRUE,
+      taxon_id = taxon_id
     ),
     error = function(error) {
       message("iNaturalist image query failed: ", conditionMessage(error))
@@ -2064,7 +2259,7 @@ inat_images <- function(
   }
   composition_path <- .inat_show_image_composition(
     images,
-    images_directory,
+    directory,
     export_comp = export_comp,
     ncol = 2L
   )
@@ -2082,56 +2277,73 @@ inat_images <- function(
 
 #' @rdname inat_images
 #' @export
+#' @usage
+#' inat_images_md(
+#'   species = NULL,
+#'   user_id = NULL,
+#'   number_observations = 1L,
+#'   observation_id = NULL,
+#'   image_size = NULL,
+#'   source = c("web", "local"),
+#'   verify_local = FALSE,
+#'   directory = getwd(),
+#'   quality_grade = NULL,
+#'   place_id = NULL,
+#'   catalogue_dataset = NULL,
+#'   language = NULL,
+#'   observer_name = NULL,
+#'   save_images = FALSE,
+#'   include_auxiliary = FALSE,
+#'   export_comp = FALSE,
+#'   refresh = FALSE,
+#'   ncol = 2L,
+#'   word_subfigure_width = "3in",
+#'   latex_subfigure_width = "86\%",
+#'   taxon_id = NULL
+#' )
 #'
 #' @examples
 #' \dontrun{
-#' inat_images_md("Bidens andicola")
-#' inat_images_md("Bidens andicola", number_observations = 4,
-#'                source = "web", ncol = 2)
-#' inat_images_md("Bidens andicola", user_id = "observer_login",
-#'                place_id = 1234, number_observations = 3,
-#'                image_size = "large", language = "en")
-#' inat_images_md("Bidens andicola", observation_id = 123456,
-#'                source = "web", save_images = TRUE)
-#' inat_images_md("Bidens andicola", source = "local",
-#'                verify_local = FALSE, export_comp = TRUE, ncol = 2)
-#' inat_images_md("Bidens andicola", verify_local = TRUE,
-#'                number_observations = 2, save_images = TRUE,
-#'                word_subfigure_width = "3in",
-#'                latex_subfigure_width = "86%")
-#' inat_images_md("Bidens andicola", quality_grade = "needs_id",
-#'                observer_name = "Observer name", images_directory = ".",
-#'                refresh = TRUE, catalogue_dataset = "3LXR",
-#'                export_comp = TRUE, ncol = 1)
+#' inat_images_md("Bidens andicola", user_id = "marceloamores")
 #' }
 inat_images_md <- function(
     species = NULL,
     user_id = NULL,
     number_observations = 1L,
     observation_id = NULL,
-    image_size = c(
-      .sacha_inat_defaults$default_image_size,
-      setdiff(c("medium", "large", "original", "small", "square"),
-              .sacha_inat_defaults$default_image_size)
-    ),
+    image_size = NULL,
     source = c("web", "local"),
     verify_local = FALSE,
-    images_directory = .sacha_inat_defaults$default_images_directory,
-    quality_grade = .sacha_inat_defaults$default_quality_grade,
+    directory = getwd(),
+    quality_grade = NULL,
     place_id = NULL,
-    catalogue_dataset = .sacha_inat_defaults$catalogue_dataset,
-    language = .inat_language_choices(preferred = .sacha_inat_defaults$language),
+    catalogue_dataset = NULL,
+    language = NULL,
     observer_name = NULL,
     save_images = FALSE,
+    include_auxiliary = FALSE,
     export_comp = FALSE,
     refresh = FALSE,
     ncol = 2L,
     word_subfigure_width = "3in",
-    latex_subfigure_width = "86%"
+    latex_subfigure_width = "86%",
+    taxon_id = NULL
 ) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  language <- match.arg(language)
-  image_size <- match.arg(image_size)
+  missing_image_size <- missing(image_size)
+  missing_quality_grade <- missing(quality_grade)
+  missing_catalogue_dataset <- missing(catalogue_dataset)
+  missing_language <- missing(language)
+  call <- match.call(expand.dots = FALSE)
+  defaults <- .inat_argument_defaults()
+
+  if (missing_image_size) image_size <- defaults$image_size
+  if (missing_quality_grade) quality_grade <- defaults$quality_grade
+  if (missing_catalogue_dataset) catalogue_dataset <- defaults$catalogue_dataset
+  if (missing_language) language <- defaults$language
+
+  .sacha_apply_arg_defaults(environment(), call, names(formals(sys.function())))
+  language <- match.arg(language, choices = defaults$language_choices)
+  image_size <- match.arg(image_size, choices = defaults$image_size_choices)
   source <- match.arg(source)
   if (!is.logical(save_images) || length(save_images) != 1L || is.na(save_images)) {
     stop("'save_images' must be TRUE or FALSE.", call. = FALSE)
@@ -2151,15 +2363,17 @@ inat_images_md <- function(
     image_size = image_size,
     source = source,
     verify_local = verify_local,
-    images_directory = images_directory,
+    directory = directory,
     quality_grade = quality_grade,
     place_id = place_id,
     catalogue_dataset = catalogue_dataset,
     language = language,
     observer_name = observer_name,
     save_images = save_images,
+    include_auxiliary = include_auxiliary,
     refresh = refresh,
-    use_placeholders = FALSE
+    use_placeholders = FALSE,
+    taxon_id = taxon_id
   ), error = function(error) NULL))
   if (is.null(images)) {
     return(invisible(NULL))
@@ -2167,7 +2381,7 @@ inat_images_md <- function(
 
   .inat_render_images_md(
     images = images,
-    images_directory = images_directory,
+    directory = directory,
     observer_name = observer_name,
     export_comp = export_comp,
     ncol = ncol,

@@ -1047,7 +1047,7 @@ classification_md <- function(species, rank = NULL, language = NULL) {
 #' Names in other languages are followed by the language in parentheses, and
 #' names without a declared language are marked with a localized
 #' "unspecified" label. Language codes reported by the source are normalized
-#' for Spanish (`"es"`) and Kichwa (`"kichwa"`, `"castellano-kichwa"`); other
+#' for Spanish (`"es"`); other
 #' codes are kept as reported, with the country appended when available.
 #' Groups are separated by `"; "`.
 #'
@@ -1184,11 +1184,11 @@ common_names_md <- function(species, language = NULL) {
 #' @seealso [references_sp()], [sacha_configure()], [accessors-sacha]
 #' @examples
 #' \dontrun{
-#' syn_and_comb("Bomarea caldasii")
+#' syn_and_comb("Bidens andicola")
 #'
-#' syn_and_comb("Bomarea caldasii", language = "es")
+#' syn_and_comb("Bidens andicola", language = "es")
 #'
-#' syn_and_comb_md("Bomarea caldasii")
+#' syn_and_comb_md("Bidens andicola")
 #' }
 #' @export
 syn_and_comb <- function(species, language = NULL) {
@@ -1326,10 +1326,10 @@ syn_and_comb_md <- function(species, language = NULL) {
   paste(gsub("[^[:alnum:]]+", "_", parts), collapse = "_")
 }
 
-.sacha_global_save_bib <- function(record, bib_dir, language = NULL) {
+.sacha_global_save_bib <- function(record, directory, language = NULL) {
   if (!length(record$references)) return(invisible(NULL))
   name <- .sacha_global_bib_name(record)
-  target <- file.path(.sacha_exports_root(bib_dir), name)
+  target <- file.path(.sacha_exports_root(directory), name)
   dir.create(target, recursive = TRUE, showWarnings = FALSE)
   if (!dir.exists(target)) stop(sprintf("Could not create the directory '%s'.", target), call. = FALSE)
   file <- file.path(target, paste0(name, ".bib"))
@@ -1339,12 +1339,12 @@ syn_and_comb_md <- function(species, language = NULL) {
   invisible(file)
 }
 
-.sacha_global_references_record <- function(species, save_bib, bib_dir, language) {
+.sacha_global_references_record <- function(species, save_bib, directory, language) {
   if (!is.logical(save_bib) || length(save_bib) != 1L || is.na(save_bib)) {
     stop("`save_bib` must be TRUE or FALSE.", call. = FALSE)
   }
   record <- .sacha_global_record(species)
-  if (save_bib) .sacha_global_save_bib(record, .sacha_global_text(bib_dir, "bib_dir"), language)
+  if (save_bib) .sacha_global_save_bib(record, .sacha_global_text(directory, "directory"), language)
   record
 }
 
@@ -1365,10 +1365,10 @@ syn_and_comb_md <- function(species, language = NULL) {
 #' With `save_bib = TRUE`, the references are also written to a `.bib` file
 #' inside a directory named after the species with the pattern
 #' `Family_Genus_species`, for example `Asteraceae_Bidens_andicola`. The
-#' directory is created under `bib_dir` if it does not exist, and the file
+#' directory is created under `directory` if it does not exist, and the file
 #' has the same name as the directory plus the `.bib` extension:
 #'
-#' `<bib_dir>/sacha_exports/Asteraceae_Bidens_andicola/Asteraceae_Bidens_andicola.bib`
+#' `<directory>/sacha_exports/Asteraceae_Bidens_andicola/Asteraceae_Bidens_andicola.bib`
 #'
 #' The family is taken from the classification returned by the source; if no
 #' family is available, `Unknown` is used. Characters other than letters and
@@ -1389,11 +1389,10 @@ syn_and_comb_md <- function(species, language = NULL) {
 #' @param save_bib Logical. `FALSE` (default) only returns or prints the
 #'   references. `TRUE` also saves them in BibTeX format as described in
 #'   *Saving references in BibTeX*. Any other value raises an error.
-#' @param bib_dir Base directory in which `sacha_exports/Family_Genus_species`
-#'   is created when `save_bib = TRUE`. Any valid path, absolute or relative
-#'   to the working directory, is accepted. Defaults to `"."` (the working
-#'   directory), producing files under `./sacha_exports`. It is ignored when
-#'   `save_bib = FALSE`.
+#' @param directory Common base directory for saved package files.
+#'   `sacha_exports/Family_Genus_species` is created under this path when
+#'   `save_bib = TRUE`. Defaults to the current working directory. It is
+#'   ignored when `save_bib = FALSE`.
 #'
 #' @return
 #' - `references_sp()`: a character string with one citation per line, or a
@@ -1413,25 +1412,25 @@ syn_and_comb_md <- function(species, language = NULL) {
 #'
 #' references_sp("Bidens andicola", save_bib = TRUE)
 #'
-#' references_sp("Bidens andicola", save_bib = TRUE, bib_dir = "bibliografia")
+#' references_sp("Bidens andicola", save_bib = TRUE, directory = "bibliografia")
 #'
 #' references_sp_md("Bidens andicola")
 #'
-#' references_sp_md("Bidens andicola", save_bib = TRUE, bib_dir = "bibliografia")
+#' references_sp_md("Bidens andicola", save_bib = TRUE, directory = "bibliografia")
 #' }
 #' @export
-references_sp <- function(species, language = NULL, save_bib = FALSE, bib_dir = ".") {
+references_sp <- function(species, language = NULL, save_bib = FALSE, directory = getwd()) {
   .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  record <- .sacha_global_references_record(species, save_bib, bib_dir, language)
+  record <- .sacha_global_references_record(species, save_bib, directory, language)
   if (!length(record$references)) return(.sacha_global_no_data_or_warn(record, language))
   .sacha_global_text_out(paste(.sacha_global_reference_citations(record), collapse = "\n"))
 }
 
 #' @rdname references_sp
 #' @export
-references_sp_md <- function(species, language = NULL, save_bib = FALSE, bib_dir = ".") {
+references_sp_md <- function(species, language = NULL, save_bib = FALSE, directory = getwd()) {
   .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
-  record <- .sacha_global_references_record(species, save_bib, bib_dir, language)
+  record <- .sacha_global_references_record(species, save_bib, directory, language)
   if (!length(record$references)) return(.sacha_global_emit_md(""))
   items <- paste0("- ", .sacha_global_markdown_escape(.sacha_global_reference_citations(record)))
   .sacha_global_emit_md(paste0("**", .sacha_global_label("references", language), ":**\n\n",

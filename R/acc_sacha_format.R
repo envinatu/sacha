@@ -75,12 +75,12 @@
 #' A complete ChecklistBank dataset is not taxon-specific, so its archive and
 #' download metadata are stored in `sacha_exports/checklistbank_<dataset>`.
 #'
-#' In functions with a `directory`, `images_directory`, or `bib_dir` argument,
-#' that value is the base directory under which `sacha_exports` is created or
-#' searched. The argument documentation identifies the resulting path for
-#' each function. Existing spatial occurrence exports in `spatial_exports` and
-#' iNaturalist archives in `images` remain readable through the local-source
-#' functions; new package exports use `sacha_exports`.
+#' File-based functions use the same `directory` argument as the base under
+#' which `sacha_exports` is created or searched. It defaults to the current
+#' working directory, and the same value can be shared across a workflow with
+#' [sacha_configure()] or [sacha_arg_configure()]. Existing iNaturalist
+#' archives in `images` remain readable by its local-source functions; new
+#' package exports use `sacha_exports`.
 #'
 #' Figures created only to render a Markdown report are written to the
 #' format-specific paths managed by Quarto or R Markdown. These intermediate
@@ -99,7 +99,9 @@
 NULL
 
 .sacha_exports_root <- function(directory = getwd()) {
-  directory <- normalizePath(path.expand(directory), winslash = "/", mustWork = FALSE)
+  directory <- normalizePath(
+    path.expand(trimws(directory)), winslash = "/", mustWork = FALSE
+  )
   file.path(directory, "sacha_exports")
 }
 

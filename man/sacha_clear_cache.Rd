@@ -26,7 +26,7 @@ data or restoring defaults must not reset them.
 \examples{
 \donttest{
 sacha_configure(
-  global = list(language = "es"),
+  clb = list(language = "es"),
   inat = list(default_image_size = "large")
 )
 sacha_arg_configure(species = "Bidens andicola", source = "local")

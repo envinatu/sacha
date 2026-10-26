@@ -88,12 +88,12 @@ references and GBIF occurrence data and maps remain in the taxon directory.
 A complete ChecklistBank dataset is not taxon-specific, so its archive and
 download metadata are stored in \verb{sacha_exports/checklistbank_<dataset>}.
 
-In functions with a \code{directory}, \code{images_directory}, or \code{bib_dir} argument,
-that value is the base directory under which \code{sacha_exports} is created or
-searched. The argument documentation identifies the resulting path for
-each function. Existing spatial occurrence exports in \code{spatial_exports} and
-iNaturalist archives in \code{images} remain readable through the local-source
-functions; new package exports use \code{sacha_exports}.
+File-based functions use the same \code{directory} argument as the base under
+which \code{sacha_exports} is created or searched. It defaults to the current
+working directory, and the same value can be shared across a workflow with
+\code{\link[=sacha_configure]{sacha_configure()}} or \code{\link[=sacha_arg_configure]{sacha_arg_configure()}}. Existing iNaturalist
+archives in \code{images} remain readable by its local-source functions; new
+package exports use \code{sacha_exports}.
 
 Figures created only to render a Markdown report are written to the
 format-specific paths managed by Quarto or R Markdown. These intermediate

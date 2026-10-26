@@ -5,9 +5,14 @@
 \alias{references_sp_md}
 \title{References associated with a taxon}
 \usage{
-references_sp(species, language = NULL, save_bib = FALSE, bib_dir = ".")
+references_sp(species, language = NULL, save_bib = FALSE, directory = getwd())
 
-references_sp_md(species, language = NULL, save_bib = FALSE, bib_dir = ".")
+references_sp_md(
+  species,
+  language = NULL,
+  save_bib = FALSE,
+  directory = getwd()
+)
 }
 \arguments{
 \item{species}{Character scalar with a scientific name of at least a genus
@@ -25,11 +30,10 @@ Unsupported values raise an error.}
 references. \code{TRUE} also saves them in BibTeX format as described in
 \emph{Saving references in BibTeX}. Any other value raises an error.}
 
-\item{bib_dir}{Base directory in which \code{sacha_exports/Family_Genus_species}
-is created when \code{save_bib = TRUE}. Any valid path, absolute or relative
-to the working directory, is accepted. Defaults to \code{"."} (the working
-directory), producing files under \code{./sacha_exports}. It is ignored when
-\code{save_bib = FALSE}.}
+\item{directory}{Common base directory for saved package files.
+\code{sacha_exports/Family_Genus_species} is created under this path when
+\code{save_bib = TRUE}. Defaults to the current working directory. It is
+ignored when \code{save_bib = FALSE}.}
 }
 \value{
 \itemize{
@@ -53,10 +57,10 @@ references can also be exported to a BibTeX file.
 With \code{save_bib = TRUE}, the references are also written to a \code{.bib} file
 inside a directory named after the species with the pattern
 \code{Family_Genus_species}, for example \code{Asteraceae_Bidens_andicola}. The
-directory is created under \code{bib_dir} if it does not exist, and the file
+directory is created under \code{directory} if it does not exist, and the file
 has the same name as the directory plus the \code{.bib} extension:
 
-\verb{<bib_dir>/sacha_exports/Asteraceae_Bidens_andicola/Asteraceae_Bidens_andicola.bib}
+\verb{<directory>/sacha_exports/Asteraceae_Bidens_andicola/Asteraceae_Bidens_andicola.bib}
 
 The family is taken from the classification returned by the source; if no
 family is available, \code{Unknown} is used. Characters other than letters and
@@ -82,11 +86,11 @@ references_sp("Bidens andicola", language = "es")
 
 references_sp("Bidens andicola", save_bib = TRUE)
 
-references_sp("Bidens andicola", save_bib = TRUE, bib_dir = "bibliografia")
+references_sp("Bidens andicola", save_bib = TRUE, directory = "bibliografia")
 
 references_sp_md("Bidens andicola")
 
-references_sp_md("Bidens andicola", save_bib = TRUE, bib_dir = "bibliografia")
+references_sp_md("Bidens andicola", save_bib = TRUE, directory = "bibliografia")
 }
 }
 \seealso{

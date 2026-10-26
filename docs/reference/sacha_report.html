@@ -41,18 +41,21 @@ geographic locations, the cropped GBIF map, and bibliographic references."><meta
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul></li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
   <a href="https://github.com/envinatu/sacha/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
@@ -84,7 +87,13 @@ geographic locations, the cropped GBIF map, and bibliographic references.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sacha_report</span><span class="op">(</span><span class="va">species</span>, source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"local"</span>, <span class="st">"web"</span><span class="op">)</span>, language <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sacha_report</span><span class="op">(</span></span>
+<span>  <span class="va">species</span>,</span>
+<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"local"</span>, <span class="st">"web"</span><span class="op">)</span>,</span>
+<span>  language <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -109,15 +118,22 @@ indexation links.</p></dd>
 localized output. <code>NULL</code> follows each module's active language setting.</p></dd>
 
 
+<dt id="arg-directory">directory<a class="anchor" aria-label="anchor" href="#arg-directory"></a></dt>
+<dd><p>Common base directory for file-based package functions.
+GBIF occurrences and maps, iNaturalist images, and saved references use
+their existing subdirectories under this path. Defaults to the current
+working directory; it can also be set with <code><a href="sacha_configure.html">sacha_configure()</a></code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Named arguments forwarded to the relevant underlying functions.
 Supported names are <code>user_id</code>, <code>number_observations</code>, <code>observation_id</code>,
-<code>image_size</code>, <code>verify_local</code>, <code>images_directory</code>, <code>quality_grade</code>,
+<code>image_size</code>, <code>verify_local</code>, <code>quality_grade</code>,
 <code>place_id</code>, <code>catalogue_dataset</code>, <code>observer_name</code>, <code>save_images</code>,
 <code>export_comp</code>, <code>refresh</code>, <code>ncol</code>, <code>word_subfigure_width</code>,
-<code>latex_subfigure_width</code>, <code>identifier</code>, <code>rank</code>, <code>save_bib</code>, <code>bib_dir</code>,
+<code>latex_subfigure_width</code>, <code>identifier</code>, <code>rank</code>, <code>save_bib</code>,
 <code>kml</code>, <code>crop_area</code>, <code>crop_box</code>, <code>limit</code>, <code>mode</code>, <code>save_occurrences</code>,
-<code>export_image</code>, <code>directory</code>, <code>colour</code>, <code>dpi</code>, <code>ppp</code>, <code>overwrite</code>,
+<code>export_image</code>, <code>colour</code>, <code>static_legend_position</code>, <code>dpi</code>, <code>overwrite</code>,
 <code>distribution</code>, <code>fig_width</code>, <code>fig_height</code>, and <code>local_export</code>. Their
 choices, defaults, and effects are documented by the corresponding
 accessors <code><a href="inat_images.html">inat_images_md()</a></code>, <code><a href="indexations.html">indexations_md()</a></code>,

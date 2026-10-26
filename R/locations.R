@@ -165,8 +165,7 @@
 #' render is not stopped.
 #'
 #' @param species A binomial scientific name in the form `"Genus species"`,
-#'   e.g. `"Bidens andicola"`, `"Cinchona officinalis"`, or `"Puma
-#'   concolor"`.
+#'   e.g. `"Bidens andicola"`, or `"Puma concolor"`.
 #' @param language Display language: `"es"` (default) or `"en"`, or any
 #'   other alias defined in the package's language files.
 #' @return Invisibly returns the emitted string: plain text for `locations()`

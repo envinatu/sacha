@@ -6,7 +6,7 @@
 #' neighbouring JSON file records the dataset key, download URL, response
 #' status, retrieval time, archive size and checksum.
 #'
-#' The default dataset is the one configured by sacha_configure().
+#' The default dataset is configured with `sacha_configure(clb = ...)`.
 #' Supply another ChecklistBank dataset key to download a different dataset
 #' without changing the package configuration.
 #'
@@ -22,8 +22,9 @@
 #' and other responses are rejected with their HTTP status and content type.
 #'
 #' @param dataset ChecklistBank dataset key or alias, supplied as a character
-#'   string or a whole number. Defaults to the dataset currently configured
-#'   by sacha_configure().
+#'   string or a whole number. When omitted, uses the dataset configured with
+#'   `sacha_configure(clb = ...)`. A value supplied directly takes precedence
+#'   over a shared default from `sacha_arg_configure()`.
 #' @param directory Base directory under which `sacha_exports` is created for
 #'   the archive and its download metadata. Defaults to the current working
 #'   directory; the required directories are created when necessary.
@@ -33,9 +34,9 @@
 #' @return Invisibly, the normalized path to the downloaded ColDP ZIP archive.
 #'
 #' @references
-#' ChecklistBank API guide: <https://github.com/CatalogueOfLife/backend/blob/master/API.md>.
-#' ChecklistBank dataset export endpoint:
-#' <https://api.checklistbank.org/dataset/{key}/export.zip>.
+#' ChecklistBank API guide: <https://www.catalogueoflife.org/tools/api>.
+#' ChecklistBank dataset export endpoint: `/dataset/{key}/export.zip`, relative
+#' to <https://api.checklistbank.org/>.
 #' Catalogue of Life Data Package (ColDP) specification:
 #' <https://catalogueoflife.github.io/coldp/>.
 #'
@@ -49,11 +50,14 @@
 #' }
 #' @export
 save_clb <- function(
-    dataset = .sacha_global_config$dataset,
+    dataset = NULL,
     directory = getwd(),
     overwrite = TRUE
 ) {
-  .sacha_apply_arg_defaults(environment(), match.call(expand.dots = FALSE), names(formals(sys.function())))
+  dataset_missing <- missing(dataset)
+  call <- match.call(expand.dots = FALSE)
+  if (dataset_missing) dataset <- .sacha_global_config$dataset
+  .sacha_apply_arg_defaults(environment(), call, names(formals(sys.function())))
   if (is.numeric(dataset) && length(dataset) == 1L && !is.na(dataset)) {
     if (!is.finite(dataset) || dataset < 0 || dataset != trunc(dataset)) {
       stop("A numeric dataset key must be a non-negative whole number.", call. = FALSE)

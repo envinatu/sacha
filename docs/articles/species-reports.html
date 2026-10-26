@@ -57,18 +57,21 @@
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
@@ -103,19 +106,20 @@ customization</h1>
     
     
 <div class="section level2">
-<h2 id="combined-reports">Combined reports<a class="anchor" aria-label="anchor" href="#combined-reports"></a>
+<h2 id="start-with-a-taxonomic-report">Start with a taxonomic report<a class="anchor" aria-label="anchor" href="#start-with-a-taxonomic-report"></a>
 </h2>
-<p>Report functions combine existing accessors. They preserve each
-section’s format and rules, so users can start with a standard report
-and build a custom composition when they need control over its content
-or order.</p>
-<p>The code chunks in this vignette are not executed when it is built:
-some require external services, while others require locally saved
-files. No credentials, user-specific file paths, or downloads are
-included.</p>
+<p>Report functions combine existing accessors. Begin with the
+ChecklistBank report, which uses the configured web service and does not
+require local occurrence or image files:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_clb_report.html">sacha_clb_report</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
+<p>The report contains the accepted name, first publication,
+indexations, common names, classification, synonyms and combinations,
+documented areas, and references. Its sections follow a fixed order and
+retain the behavior of their individual accessors.</p>
 </div>
 <div class="section level2">
-<h2 id="choosing-a-report">Choosing a report<a class="anchor" aria-label="anchor" href="#choosing-a-report"></a>
+<h2 id="reports-that-include-maps-and-photographs">Reports that include maps and photographs<a class="anchor" aria-label="anchor" href="#reports-that-include-maps-and-photographs"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -126,117 +130,167 @@ included.</p>
 <thead><tr class="header">
 <th align="left">Function</th>
 <th align="left">Sections</th>
-<th align="left">Source considerations</th>
+<th align="left">Source behavior</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left"><code><a href="../reference/sacha_clb_report.html">sacha_clb_report()</a></code></td>
-<td align="left">Accepted name, first publication, indexations, common
-names, classification, synonyms and combinations, documented areas, and
-references.</td>
-<td align="left">ChecklistBank sections retain the configured web
-behavior.</td>
+<td align="left">Taxonomic and bibliographic sections, including
+documented areas.</td>
+<td align="left">Uses the configured ChecklistBank service.</td>
 </tr>
 <tr class="even">
 <td align="left"><code><a href="../reference/sacha_spatial_report.html">sacha_spatial_report()</a></code></td>
 <td align="left">Documented areas and a cropped GBIF map.</td>
-<td align="left">
-<code>language</code> applies to the area text;
-additional arguments are passed to <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>.</td>
+<td align="left">Queries the configured ChecklistBank service and passes
+map options to <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>.</td>
 </tr>
 <tr class="odd">
 <td align="left"><code><a href="../reference/sacha_report.html">sacha_report()</a></code></td>
-<td align="left">Name, first publication, images, indexations, common
-names, classification, synonymy, areas, GBIF map, and references.</td>
+<td align="left">Taxonomic data, iNaturalist photographs, documented
+areas, a cropped GBIF map, and references.</td>
 <td align="left">
-<code>source = "local"</code> is the default for images
-and maps; <code>source = "web"</code> requests both services online.
-ChecklistBank sections continue to use their web source.</td>
+<code>source = "web"</code> queries iNaturalist and
+GBIF; <code>source = "local"</code> reads saved files. ChecklistBank
+sections continue to use their configured service.</td>
 </tr>
 </tbody>
 </table>
-<p>For <code><a href="../reference/sacha_report.html">sacha_report()</a></code>, <code>source = "local"</code>
-requires iNaturalist and GBIF files that match the species and filters.
-If the cropped map requires a boundary, provide one or configure it in
-advance. ChecklistBank sections may still query the web even when local
-files are used, so the report is not fully offline.</p>
-<p>The <code>_md</code> reports emit document markup. In Quarto or R
-Markdown, <code>results='asis'</code> lets the renderer process that
-markup and its figures. Figure options and cross-references are covered
-in the <a href="spatial-maps.html">maps</a> and <a href="inaturalist-images.html">images</a> vignettes.</p>
-</div>
-<div class="section level2">
-<h2 id="shared-values-and-explicit-arguments">Shared values and explicit arguments<a class="anchor" aria-label="anchor" href="#shared-values-and-explicit-arguments"></a>
-</h2>
-<p><code><a href="../reference/sacha_arg_configure.html">sacha_arg_configure()</a></code> sets shared arguments for
-subsequent calls. An argument supplied directly to a report takes
-precedence over its shared value. Each section’s arguments retain the
-meaning and accepted values of the underlying function;
-<code><a href="../reference/sacha_report.html">?sacha_report</a></code> lists the forwarded names, and the
-corresponding accessors document how to use them.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_arg_configure.html">sacha_arg_configure</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
-<span>  number_observations <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  image_size <span class="op">=</span> <span class="st">"medium"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"local"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span>crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">180</span>, <span class="op">-</span><span class="fl">90</span>, <span class="fl">180</span>, <span class="fl">90</span>, <span class="st">"Global extent"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
+<p>For a web report with a regional map, provide a crop area. The
+iNaturalist section uses the same observer filter as the image
+examples:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
 <span>  source <span class="op">=</span> <span class="st">"web"</span>,</span>
-<span>  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">180</span>, <span class="op">-</span><span class="fl">90</span>, <span class="fl">180</span>, <span class="fl">90</span>, <span class="st">"Global extent"</span><span class="op">)</span></span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/sacha_spatial_report.html">sacha_spatial_report()</a></code> is useful when the document needs
+only documented areas and a GBIF map:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_spatial_report.html">sacha_spatial_report</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="save-data-before-using-a-local-report">Save data before using a local report<a class="anchor" aria-label="anchor" href="#save-data-before-using-a-local-report"></a>
+</h2>
+<p>The default source for <code><a href="../reference/sacha_report.html">sacha_report()</a></code> is local. Save the
+image records and the cropped GBIF export first, using the same species,
+observer, crop, and base directory that the report will use.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_save_images.html">inat_save_images</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sacha_clear_cache.html">sacha_clear_cache</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The first report inherits the configured values. In the second,
-explicit arguments replace shared values with the same names.
-<code><a href="../reference/sacha_clear_cache.html">sacha_clear_cache()</a></code> resets configuration and removes shared
-values, but does not delete saved files or reset iNaturalist
-download-volume and delay controls.</p>
+<span><span class="fu"><a href="../reference/gbif_save_occurrences.html">gbif_save_occurrences</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Then read the saved records in the report.
+<code>local_export = "crop"</code> selects the export saved for Ecuador.
+The taxonomic sections still query ChecklistBank, so a local report is
+not fully offline.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span>
+<span>  local_export <span class="op">=</span> <span class="st">"crop"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="advanced-section-composition">Advanced section composition<a class="anchor" aria-label="anchor" href="#advanced-section-composition"></a>
+<h2 id="build-a-custom-report-from-accessors">Build a custom report from accessors<a class="anchor" aria-label="anchor" href="#build-a-custom-report-from-accessors"></a>
 </h2>
-<p>When the standard order does not fit a report’s purpose, Markdown
-accessors can be combined directly. For example, a species account can
-lead with classification, limit the images, include a full-extent map,
-and end with references. This approach also makes it possible to omit
-sections that are not relevant.</p>
-<p>Custom compositions should account for source-specific behavior:
-<code>source = "local"</code> in iNaturalist and GBIF requires prepared
-files; ChecklistBank functions and <code><a href="../reference/locations.html">locations()</a></code> do not
-accept that argument and follow their own query rules. Each section is
-rendered in call order, so map and image calls should be placed in a
-chunk configured for <code>asis</code> output.</p>
-<p>More focused outputs can be assembled without querying every module.
-For example, a nomenclatural note can combine a name, publication,
-synonyms, and references; a geographic account can pair
-<code><a href="../reference/locations.html">locations_md()</a></code> with <code><a href="../reference/gbif_map_crop.html">gbif_map_crop_md()</a></code>; and a
-photographic plate can use <code><a href="../reference/inat_images.html">inat_images_md()</a></code> without a map.
-Keep filters and parameters that affect record selection, licensing, or
-geographic scale explicit so the composition remains interpretable and
-reproducible.</p>
+<p>Use the <code>_md</code> accessors when you want to choose the
+sections or their order. This example combines taxonomic data, locally
+saved iNaturalist images and GBIF records, and references. Run it in a
+Quarto or R Markdown chunk with <code>results='asis'</code>.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sc_full_name.html">sc_full_name_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/classification.html">classification_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/common_names.html">common_names_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/inat_images.html">inat_images_md</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/locations.html">locations_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/gbif_map_crop.html">gbif_map_crop_md</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  local_export <span class="op">=</span> <span class="st">"crop"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/references_sp.html">references_sp_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, save_bib <span class="op">=</span> <span class="cn">TRUE</span>, directory <span class="op">=</span> <span class="st">"sacha_data"</span><span class="op">)</span></span></code></pre></div>
+<p>A focused account can omit unrelated sections or add
+function-specific options such as <code>rank</code>,
+<code>identifier</code>, <code>save_bib</code>, <code>mode</code>, and
+<code>fig_width</code>. Each accessor’s help page lists the options it
+accepts.</p>
 </div>
 <div class="section level2">
-<h2 id="rendering-practices">Rendering practices<a class="anchor" aria-label="anchor" href="#rendering-practices"></a>
+<h2 id="shared-and-module-specific-configuration">Shared and module-specific configuration<a class="anchor" aria-label="anchor" href="#shared-and-module-specific-configuration"></a>
 </h2>
-<ul>
-<li>For repeated renders, use local sources for images and maps after
-validating and archiving the required files.</li>
-<li>Avoid repeating online queries for each output format of the same
-book; retrieve or save the data once and reuse it.</li>
-<li>Keep provenance metadata, dates, and licenses with downloaded
-files.</li>
-<li>Use <code>results='asis'</code> in chunks that print Markdown
-generated by the package.</li>
-<li>Define cross-references from the identifiers produced by the
-functions and confirm them in the rendered document.</li>
-</ul>
-<p>ChecklistBank, GBIF, and iNaturalist policies and availability may
-change. Consult each provider’s documentation before planning
-large-scale retrieval or redistributing records and images.</p>
+<p>Use <code><a href="../reference/sacha_configure.html">sacha_configure()</a></code> for module settings and shared
+source or directory defaults. Here, labels are set to Spanish,
+iNaturalist uses a larger default image, and local files are read from
+<code>sacha_data</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_configure.html">sacha_configure</a></span><span class="op">(</span></span>
+<span>  clb <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span>,</span>
+<span>  inat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"es"</span>, default_image_size <span class="op">=</span> <span class="st">"large"</span><span class="op">)</span>,</span>
+<span>  spatial <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>language <span class="op">=</span> <span class="st">"es"</span><span class="op">)</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Use <code><a href="../reference/sacha_arg_configure.html">sacha_arg_configure()</a></code> for shared function arguments
+such as the iNaturalist observer and crop. An argument supplied in a
+function call takes precedence over its configured value.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_arg_configure.html">sacha_arg_configure</a></span><span class="op">(</span></span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span>
+<span>  local_export <span class="op">=</span> <span class="st">"crop"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, source <span class="op">=</span> <span class="st">"web"</span><span class="op">)</span></span></code></pre></div>
+<p>The first report uses the configured local source and directory. The
+second overrides the source for its iNaturalist and GBIF sections. To
+adjust one request without changing the session, pass settings such as
+<code>language = "es"</code>, <code>image_size = "large"</code>,
+<code>limit = 1000</code>, or <code>mode = "static"</code> directly to
+the relevant function. <code><a href="../reference/sacha_clear_cache.html">sacha_clear_cache()</a></code> resets
+configuration and shared argument values but does not delete saved
+exports.</p>
+</div>
+<div class="section level2">
+<h2 id="application-with-pacha">Application with pacha<a class="anchor" aria-label="anchor" href="#application-with-pacha"></a>
+</h2>
+<p>A Quarto application combining <code>sacha</code> and
+<code>pacha</code> is presented in the book <a href="https://envinatu.github.io/envyura/" class="external-link"><em>Plantas susceptibles de
+uso sostenible en la zona andina de la provincia de Cotopaxi,
+Ecuador</em></a>. For a local-source <code><a href="../reference/sacha_report.html">sacha_report()</a></code>,
+prepare the matching image and GBIF exports first; the ChecklistBank
+sections still use their configured service.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sacha_report.html">sacha_report</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span>
+<span>  local_export <span class="op">=</span> <span class="st">"crop"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">pacha_report</span><span class="op">(</span><span class="st">"Bidens andicola"</span><span class="op">)</span></span></code></pre></div>
 </div>
   </div>
 

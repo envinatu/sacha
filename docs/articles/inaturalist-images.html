@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>04. iNaturalist observation photographs • sacha</title>
+<title>iNaturalist observation photographs with sacha • sacha</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="48x48" href="../favicon-48x48.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="04. iNaturalist observation photographs">
+<script src="../pkgdown.js"></script><meta property="og:title" content="iNaturalist observation photographs with sacha">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -57,18 +57,21 @@
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
@@ -91,7 +94,8 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>04. iNaturalist observation photographs</h1>
+      <h1 data-toc-skip>iNaturalist observation photographs with
+sacha</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/envinatu/sacha/blob/HEAD/vignettes/inaturalist-images.Rmd" class="external-link"><code>vignettes/inaturalist-images.Rmd</code></a></small>
@@ -115,10 +119,17 @@ to the console and displays an image composition in the graphics viewer.
 <code><a href="../reference/inat_images.html">inat_images_md()</a></code> generates markup for Quarto or R Markdown
 documents. Both accept the same selection criteria and save options; the
 Markdown variant also provides layout controls for subfigures.</p>
-<p>Examples that request observations or write files are marked not to
-run when the vignette is built. This prevents requests and media
-downloads during <code>R CMD build</code> or
-<code>R CMD check</code>.</p>
+<p>Start with a web query and the default number of observations, image
+size, language, and quality grade. The username narrows the search to
+the same observer used in the examples below.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, user_id <span class="op">=</span> <span class="st">"marceloamores"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/inat_images.html">inat_images_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, user_id <span class="op">=</span> <span class="st">"marceloamores"</span><span class="op">)</span></span></code></pre></div>
+<p>Service and retrieval examples are displayed but not evaluated when
+the vignette is built. When a matching local record is available,
+<code>source = "local"</code> reads its saved metadata and image without
+querying iNaturalist or ChecklistBank; an insufficient local match
+raises an error instead of falling back to the web.</p>
 </div>
 <div class="section level2">
 <h2 id="selecting-observations-and-images">Selecting observations and images<a class="anchor" aria-label="anchor" href="#selecting-observations-and-images"></a>
@@ -126,8 +137,10 @@ downloads during <code>R CMD build</code> or
 <p>Common arguments include:</p>
 <ul>
 <li>
-<code>species</code>: scientific name; <code>observation_id</code>
-can be used instead.</li>
+<code>species</code>: scientific name; <code>taxon_id</code>:
+iNaturalist taxon ID for direct taxon selection.</li>
+<li>
+<code>observation_id</code>: selects a specific observation.</li>
 <li>
 <code>number_observations</code>: maximum number of observations;
 defaults to 1.</li>
@@ -151,8 +164,8 @@ name.</li>
 <code>catalogue_dataset</code>: ChecklistBank dataset used to
 complete the taxonomic authorship of observations.</li>
 <li>
-<code>images_directory</code>: base directory for finding or saving
-images, metadata, and compositions.</li>
+<code>directory</code>: base directory for finding or saving images,
+metadata, and compositions under <code>sacha_exports</code>.</li>
 <li>
 <code>source</code>: <code>"web"</code> queries API v2;
 <code>"local"</code> reads saved files.</li>
@@ -169,23 +182,20 @@ the number of columns and <code>word_subfigure_width</code> and
 <code>latex_subfigure_width</code> to adjust subfigure widths in those
 formats. See <code><a href="../reference/inat_images.html">?inat_images</a></code> for all arguments and accepted
 values.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
-<span>  number_observations <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"web"</span>,</span>
-<span>  quality_grade <span class="op">=</span> <span class="st">"research"</span>,</span>
-<span>  image_size <span class="op">=</span> <span class="st">"medium"</span>,</span>
-<span>  language <span class="op">=</span> <span class="st">"en"</span></span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  number_observations <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  image_size <span class="op">=</span> <span class="st">"large"</span>,</span>
+<span>  language <span class="op">=</span> <span class="st">"es"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/inat_images.html">inat_images_md</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
-<span>  number_observations <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"web"</span>,</span>
-<span>  ncol <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  word_subfigure_width <span class="op">=</span> <span class="st">"3in"</span>,</span>
-<span>  latex_subfigure_width <span class="op">=</span> <span class="st">"86%"</span></span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  language <span class="op">=</span> <span class="st">"es"</span>,</span>
+<span>  ncol <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code>place_id</code> accepts a numeric iNaturalist place identifier
 and can be added when sampling is restricted to a place. No particular
@@ -208,59 +218,98 @@ works. Generated attribution does not replace review of each image’s
 terms.</p>
 </div>
 <div class="section level2">
-<h2 id="local-storage-and-image-composition">Local storage and image composition<a class="anchor" aria-label="anchor" href="#local-storage-and-image-composition"></a>
+<h2 id="saving-images-from-the-web">Saving images from the web<a class="anchor" aria-label="anchor" href="#saving-images-from-the-web"></a>
 </h2>
-<p><code><a href="../reference/inat_save_images.html">inat_save_images()</a></code> downloads the primary image and, by
-default, auxiliary images for the selected observations. It saves JSON
-metadata alongside the files under
-<code>sacha_exports/Family_Genus_species/inat</code>. These local files
-can be reused with <code>source = "local"</code>. Set
-<code>include_auxiliary = FALSE</code> to save only the primary image;
-<code>overwrite</code> controls whether existing files are replaced.</p>
-<p>The <code>save_images = TRUE</code> argument in
-<code><a href="../reference/inat_images.html">inat_images()</a></code> and <code><a href="../reference/inat_images.html">inat_images_md()</a></code> saves
-images during the same query. Images and metadata are then available to
-later local calls. <code>export_comp = TRUE</code> saves only the
-composition PNG; it does not export the source images or their metadata
-again. Image composition requires the optional <code>magick</code>
-package.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_save_images.html">inat_save_images</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
-<span>  number_observations <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  image_size <span class="op">=</span> <span class="st">"medium"</span>,</span>
-<span>  include_auxiliary <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
+<p><code><a href="../reference/inat_save_images.html">inat_save_images()</a></code> downloads the primary image for each
+selected observation and saves JSON metadata alongside the files under
+<code>sacha_exports/Family_Genus_species/inat</code>. The same records
+can then be read with <code>source = "local"</code>. Set
+<code>include_auxiliary = TRUE</code> to save auxiliary images as well;
+the default is <code>FALSE</code>.</p>
+<p>You can save images in a separate step or during an image query. Both
+examples use the default image size and save location.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_save_images.html">inat_save_images</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, user_id <span class="op">=</span> <span class="st">"marceloamores"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
-<span>  number_observations <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  save_images <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code>save_images = TRUE</code> downloads the selected image files
+and metadata during the query. <code>export_comp = TRUE</code> also
+writes the composition as a PNG; it does not save the source images by
+itself. Composition export requires the optional <code>magick</code>
+package.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  save_images <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  export_comp <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/inat_images.html">inat_images_md</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"Bidens andicola"</span>,</span>
-<span>  source <span class="op">=</span> <span class="st">"web"</span>,</span>
-<span>  number_observations <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
 <span>  save_images <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  export_comp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ncol <span class="op">=</span> <span class="fl">2</span></span>
+<span>  ncol <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>A local query requires a local file that covers the requested
-filters. <code>verify_local = TRUE</code> can fall back to the web if
-the file does not satisfy the request. For fully predictable rendering,
-verify and archive the observations, images, and metadata in
-advance.</p>
+</div>
+<div class="section level2">
+<h2 id="reusing-images-locally">Reusing images locally<a class="anchor" aria-label="anchor" href="#reusing-images-locally"></a>
+</h2>
+<p>A local query needs files that cover the requested species and
+filters. <code>source = "local"</code> uses those files without
+contacting iNaturalist; it reports an error if the saved records do not
+match.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, user_id <span class="op">=</span> <span class="st">"marceloamores"</span>, source <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/inat_images.html">inat_images_md</a></span><span class="op">(</span><span class="st">"Bidens andicola"</span>, user_id <span class="op">=</span> <span class="st">"marceloamores"</span>, source <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span></code></pre></div>
+<p>If you want to check local files first and query the web when they
+are insufficient, use <code>verify_local = TRUE</code> with
+<code>source = "web"</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"web"</span>,</span>
+<span>  verify_local <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code>directory</code> changes the base folder used to find or save
+images, metadata, and compositions. A local read from a different folder
+must point to the folder that contains the saved export.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_save_images.html">inat_save_images</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span>,</span>
+<span>  include_auxiliary <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/inat_images.html">inat_images</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  directory <span class="op">=</span> <span class="st">"sacha_data"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="use-in-documents">Use in documents<a class="anchor" aria-label="anchor" href="#use-in-documents"></a>
 </h2>
-<p>In a Quarto or R Markdown chunk, <code><a href="../reference/inat_images.html">inat_images_md()</a></code>
-creates a figure with subfigures and captions containing the scientific
-name, locality, date, observer, photo license, and observation URL. Set
-<code>results='asis'</code> so the rendered document interprets the
-emitted markup.</p>
+<p>In Quarto or R Markdown, use <code><a href="../reference/inat_images.html">inat_images_md()</a></code> to create
+a figure with subfigures and captions containing the scientific name,
+locality, date, observer, photo license, and observation URL. Set
+<code>results='asis'</code> so the document interprets the generated
+markup. Use the local source for a repeatable render after saving and
+reviewing the selected images.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/inat_images.html">inat_images_md</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Bidens andicola"</span>,</span>
+<span>  user_id <span class="op">=</span> <span class="st">"marceloamores"</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"local"</span>,</span>
+<span>  export_comp <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>The panel identifier has the form
 <code>fig-taxon-&lt;taxon_id&gt;</code>, and each subfigure uses
 <code>fig-sub-&lt;observation_id&gt;</code>. The taxon ID is resolved

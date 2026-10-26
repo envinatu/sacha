@@ -284,7 +284,7 @@ print.sacha_inat_images <- function(x, ...) {
 
 .inat_show_image_composition <- function(
     images,
-    images_directory,
+    directory,
     export_comp = FALSE,
     ncol = 2L,
     show = TRUE
@@ -489,7 +489,7 @@ print.sacha_inat_images <- function(x, ...) {
   if (isTRUE(export_comp)) {
     record <- records[[1L]]
     directory <- .inat_taxon_directory(
-      images_directory,
+      directory,
       record$family,
       record$scientific_name
     )
@@ -518,7 +518,7 @@ print.sacha_inat_images <- function(x, ...) {
 
 .inat_render_images_md <- function(
     images,
-    images_directory,
+    directory,
     observer_name,
     export_comp,
     ncol,
@@ -529,7 +529,7 @@ print.sacha_inat_images <- function(x, ...) {
     suppressMessages(tryCatch(
       suppressWarnings(.inat_show_image_composition(
         images,
-        images_directory,
+        directory,
         export_comp = TRUE,
         ncol = ncol,
         show = FALSE

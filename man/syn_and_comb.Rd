@@ -60,11 +60,11 @@ author of the misapplication, it is appended after "sensu".
 
 \examples{
 \dontrun{
-syn_and_comb("Bomarea caldasii")
+syn_and_comb("Bidens andicola")
 
-syn_and_comb("Bomarea caldasii", language = "es")
+syn_and_comb("Bidens andicola", language = "es")
 
-syn_and_comb_md("Bomarea caldasii")
+syn_and_comb_md("Bidens andicola")
 }
 }
 \seealso{

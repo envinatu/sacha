@@ -37,18 +37,21 @@ the same map for a markdown-formatted report (Quarto or R Markdown)."><meta prop
       <a href="../articles/clb.html">02. ChecklistBank taxonomic and nomenclatural data</a>
     </li>
     <li>
-      <a href="../articles/getting-started.html">01. Getting started and data workflows</a>
+      <a href="../articles/getting-started.html">Getting Started with sacha for Biodiversity Data and Image Access, Mapping, and Reporting</a>
     </li>
     <li>
-      <a href="../articles/inaturalist-images.html">04. iNaturalist observation photographs</a>
+      <a href="../articles/inaturalist-images.html">iNaturalist observation photographs with sacha</a>
     </li>
     <li>
-      <a href="../articles/spatial-maps.html">03. GBIF maps and documented areas</a>
+      <a href="../articles/spatial-maps.html">Distribution Data, Geographic Areas, and Species Mapping with sacha</a>
     </li>
     <li>
       <a href="../articles/species-reports.html">05. Species reports and Quarto customization</a>
     </li>
   </ul></li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
   <a href="https://github.com/envinatu/sacha/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
@@ -77,43 +80,49 @@ the same map for a markdown-formatted report (Quarto or R Markdown).</p>
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gbif_map_crop</span><span class="op">(</span></span>
-<span>  <span class="va">species</span>,</span>
-<span>  kml <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  crop_vector <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  crop_area <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  crop_box <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">100000L</span>,</span>
+<span>  limit <span class="op">=</span> <span class="fl">50000L</span>,</span>
 <span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"interactive"</span>, <span class="st">"static"</span><span class="op">)</span>,</span>
 <span>  save_occurrences <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  export_image <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  colour <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dpi <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ppp <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  distribution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"local"</span>, <span class="st">"global"</span><span class="op">)</span>,</span>
-<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gbif"</span>, <span class="st">"local"</span><span class="op">)</span>,</span>
-<span>  local_export <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"crop"</span><span class="op">)</span></span>
+<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"web"</span>, <span class="st">"local"</span><span class="op">)</span>,</span>
+<span>  local_export <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"crop"</span><span class="op">)</span>,</span>
+<span>  taxon_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  generate_doi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  date <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  static_legend_position <span class="op">=</span> <span class="st">"bottomleft"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">gbif_map_crop_md</span><span class="op">(</span></span>
-<span>  <span class="va">species</span>,</span>
-<span>  kml <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  crop_vector <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  crop_area <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  crop_box <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">100000L</span>,</span>
+<span>  limit <span class="op">=</span> <span class="fl">50000L</span>,</span>
 <span>  mode <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save_occurrences <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  export_image <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  colour <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dpi <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ppp <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  distribution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"local"</span>, <span class="st">"global"</span><span class="op">)</span>,</span>
 <span>  fig_width <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fig_height <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gbif"</span>, <span class="st">"local"</span><span class="op">)</span>,</span>
-<span>  local_export <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"crop"</span><span class="op">)</span></span>
+<span>  source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"web"</span>, <span class="st">"local"</span><span class="op">)</span>,</span>
+<span>  local_export <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"crop"</span><span class="op">)</span>,</span>
+<span>  taxon_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  generate_doi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  date <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  static_legend_position <span class="op">=</span> <span class="st">"bottomleft"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -124,21 +133,22 @@ the same map for a markdown-formatted report (Quarto or R Markdown).</p>
 <dl><dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
 <dd><p>A binomial scientific name in the form <code>"Genus species"</code>,
 e.g. <code>"Bidens andicola"</code>. GBIF must resolve it as an exact species-level
-name; approximate and higher-rank matches are rejected.</p></dd>
+name; approximate and higher-rank matches are rejected. Supply exactly
+one of <code>species</code> or <code>taxon_id</code>.</p></dd>
 
 
-<dt id="arg-kml">kml<a class="anchor" aria-label="anchor" href="#arg-kml"></a></dt>
-<dd><p>Path to a <code>.kml</code> file whose geometry defines the crop extent and
-is drawn as the map outline. The file name provides the place name used
-in captions and in the export directory. It cannot be combined with
-<code>crop_area</code>.</p></dd>
+<dt id="arg-crop-vector">crop_vector<a class="anchor" aria-label="anchor" href="#arg-crop-vector"></a></dt>
+<dd><p>Path to a <code>.kml</code> or <code>.shp</code> file whose geometry defines
+the crop extent and is drawn as the map outline. The file name provides
+the place name used in captions and in the export directory. It cannot be
+combined with <code>crop_area</code>.</p></dd>
 
 
 <dt id="arg-crop-area">crop_area<a class="anchor" aria-label="anchor" href="#arg-crop-area"></a></dt>
 <dd><p>Geographic area name or code resolved against Natural
 Earth's administrative gazetteer, such as <code>"Ecuador"</code> or <code>"EC"</code>. Its
 complete administrative name is used in captions and legends, unless
-<code>crop_box</code> provides a label. It cannot be combined with <code>kml</code>.</p></dd>
+<code>crop_box</code> provides a label. It cannot be combined with <code>crop_vector</code>.</p></dd>
 
 
 <dt id="arg-crop-box">crop_box<a class="anchor" aria-label="anchor" href="#arg-crop-box"></a></dt>
@@ -149,7 +159,7 @@ string, sets the crop label, e.g. <code>c(-82.5, -5.5, -75.0, 1.6, "Ecuador cont
 legend: it uses this label when present and otherwise uses the formatted
 rectangle coordinates, e.g. <code>"82.5°W, 5.5°S, 75°W, 1.6°N"</code>. A supplied
 label also replaces the area name in captions and the export directory.
-It can be used alone or together with <code>kml</code> or <code>crop_area</code>; in the latter
+It can be used alone or together with <code>crop_vector</code> or <code>crop_area</code>; in the latter
 case it must overlap the boundary. The map is framed on the rectangle,
 which is not drawn. With <code>distribution = "global"</code> all records are still
 mapped, but only those inside the frame are visible. Defaults to <code>NULL</code>
@@ -158,7 +168,10 @@ mapped, but only those inside the frame are visible. Defaults to <code>NULL</cod
 
 <dt id="arg-limit">limit<a class="anchor" aria-label="anchor" href="#arg-limit"></a></dt>
 <dd><p>Maximum number of georeferenced occurrences used to draw the
-map, an integer between <code>1</code> and <code>100000</code>. Defaults to <code>100000</code>.</p></dd>
+map, an integer between <code>1</code> and <code>100000</code>. For local distribution, spatial
+filters are applied before this limit. Defaults to <code>50000</code>. For
+high-volume species such as <code>Amaranthus hybridus</code>, prefer a local export or
+narrow the query with <code>date</code>, <code>crop_vector</code>, <code>crop_area</code>, or <code>crop_box</code>.</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
@@ -168,10 +181,11 @@ interactive map for HTML output and a static map for other formats.</p></dd>
 
 
 <dt id="arg-save-occurrences">save_occurrences<a class="anchor" aria-label="anchor" href="#arg-save-occurrences"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, the records located within the
-area, its boundary, and a provenance file containing the validated GBIF
-taxon key and exact name match are saved under
-<code>sacha_exports/Family_Genus_species/Place</code>. Defaults to <code>FALSE</code>.</p></dd>
+<dd><p>Logical. If <code>TRUE</code>, records located within the area,
+the boundary, and a provenance file are saved under
+<code>sacha_exports/Family_Genus_species/Place</code>. The metadata includes the
+validated COL XR taxon key and exact taxon match. A registered download DOI
+is included when <code>generate_doi = TRUE</code>. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-export-image">export_image<a class="anchor" aria-label="anchor" href="#arg-export-image"></a></dt>
@@ -196,11 +210,6 @@ colour is used.</p></dd>
 the package default resolution is used.</p></dd>
 
 
-<dt id="arg-ppp">ppp<a class="anchor" aria-label="anchor" href="#arg-ppp"></a></dt>
-<dd><p>Spanish-language synonym of <code>dpi</code> (puntos por pulgada). If both
-are supplied, <code>ppp</code> takes precedence.</p></dd>
-
-
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
 <dd><p>Logical. Should existing output files be replaced? If
 <code>FALSE</code>, an existing local occurrence export raises an error. Defaults to
@@ -209,47 +218,85 @@ are supplied, <code>ppp</code> takes precedence.</p></dd>
 
 <dt id="arg-distribution">distribution<a class="anchor" aria-label="anchor" href="#arg-distribution"></a></dt>
 <dd><p>Geographic distribution of the mapped records:
-<code>"local"</code> (default) restricts them to the area; <code>"global"</code> includes
-all records of the species.</p></dd>
+<code>"local"</code> (default) retrieves and maps records within the area;
+<code>"global"</code> maps the available global record set in the map frame. For a
+local source, the widest compatible saved extent is used and may be
+partial.</p></dd>
 
 
 <dt id="arg-source">source<a class="anchor" aria-label="anchor" href="#arg-source"></a></dt>
-<dd><p>Occurrence source: <code>"gbif"</code> (default) retrieves records from
+<dd><p>Occurrence source: <code>"web"</code> (default) retrieves records from
 GBIF; <code>"local"</code> reads a saved export from <code>sacha_exports</code> under
 <code>directory</code>.</p></dd>
 
 
 <dt id="arg-local-export">local_export<a class="anchor" aria-label="anchor" href="#arg-local-export"></a></dt>
-<dd><p>Saved export used when <code>source = "local"</code>:
-<code>"species"</code> (default) reads the full-extent export of the species and
-applies the area; <code>"crop"</code> reads the export saved for the area.
-It is ignored when <code>source = "gbif"</code>.</p></dd>
+<dd><p>Saved export used when <code>source = "local"</code> and
+<code>distribution = "local"</code>: <code>"species"</code> (default) reads the full-extent
+export and applies the area; <code>"crop"</code> reads the export saved for the area.
+For <code>distribution = "global"</code>, the full-extent export is preferred and
+compatible cropped exports are combined if no full-extent export exists.
+It is ignored when <code>source = "web"</code>.</p></dd>
+
+
+<dt id="arg-taxon-id">taxon_id<a class="anchor" aria-label="anchor" href="#arg-taxon-id"></a></dt>
+<dd><p>A COL XR alphanumeric species usage key, such as <code>"Q2M4"</code>.
+GBIF verifies that the key identifies one species-level taxon. Supply
+exactly one of <code>taxon_id</code> or <code>species</code>.</p></dd>
+
+
+<dt id="arg-generate-doi">generate_doi<a class="anchor" aria-label="anchor" href="#arg-generate-doi"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> and <code>source = "web"</code>, create and wait
+for a registered GBIF download, and record its DOI in <code>metadata.json</code>.
+This requires GBIF account credentials. If <code>FALSE</code> (default), use the
+faster occurrence-search API and save the returned records without waiting
+for a DOI. For a local source, no GBIF request is made.</p></dd>
+
+
+<dt id="arg-date">date<a class="anchor" aria-label="anchor" href="#arg-date"></a></dt>
+<dd><p>Optional ISO date or range such as
+<code>"2020-01-01,2021-01-01"</code>. It filters occurrence datasets by their GBIF
+registry creation date (<code>createdDate</code>), then selects records from those
+datasets. It does not filter the date an occurrence was observed. Local
+exports can use only the same date filter recorded in their metadata.</p></dd>
+
+
+<dt id="arg-static-legend-position">static_legend_position<a class="anchor" aria-label="anchor" href="#arg-static-legend-position"></a></dt>
+<dd><p>Position of the static legend as one composed
+unit with its scale bar and north arrow. Applies to static maps and PNGs
+written with <code>export_image = TRUE</code>, including when <code>mode</code> is
+<code>"interactive"</code>: <code>"bottomleft"</code> (default), <code>"bottom"</code>,
+<code>"bottomright"</code>, <code>"right"</code>, <code>"topright"</code>, <code>"top"</code>, <code>"topleft"</code>, or
+<code>"left"</code>. It does not change the interactive map widget.</p></dd>
 
 
 <dt id="arg-fig-width-fig-height">fig_width, fig_height<a class="anchor" aria-label="anchor" href="#arg-fig-width-fig-height"></a></dt>
-<dd><p>Figure dimensions in inches, used only by
-<code>gbif_map_crop_md()</code>. When <code>NULL</code>, dimensions are chosen from the aspect
-ratio of the map.</p></dd>
+<dd><p>Dimensions in inches for static maps produced
+by <code>gbif_map_crop_md()</code>. When <code>NULL</code>, the static map dimensions follow its
+aspect ratio. Interactive Leaflet maps use the widget and output
+container's default sizing.</p></dd>
 
 </dl></div>
     <div id="value">
     <h2>Value</h2>
     <p>A Leaflet widget or a ggplot2 object. Paths of the written files
 are stored in the <code>"sacha_files"</code> attribute, the plotted records in
-<code>"sacha_occurrences"</code>, the species in <code>"sacha_species"</code>, and the resolved
-place name in <code>"sacha_crop_place"</code>. <code>gbif_map_crop_md()</code> returns the map
+<code>"sacha_occurrences"</code>, the species in <code>"sacha_species"</code>, the resolved
+place name in <code>"sacha_crop_place"</code>, and local coverage details in
+<code>"sacha_local_coverage"</code> for global local-source maps.
+<code>gbif_map_crop_md()</code> returns the map
 formatted for the report output.</p>
     </div>
     <div id="details">
     <h2>Details</h2>
-    <p>The area to map is defined with <code>kml</code>, <code>crop_area</code>, or <code>crop_box</code>. <code>kml</code> and
-<code>crop_area</code> are mutually exclusive and define a boundary that is drawn as
-the map outline; <code>crop_box</code> defines a rectangle and can be used alone or
-together with either of them. With <code>distribution = "local"</code> (default), only
+    <p>The area to map is defined with <code>crop_vector</code>, <code>crop_area</code>, or <code>crop_box</code>.
+<code>crop_vector</code> and <code>crop_area</code> are mutually exclusive and define a boundary
+that is drawn as the map outline; <code>crop_box</code> defines a rectangle and can be
+used alone or together with either of them. With <code>distribution = "local"</code> (default), only
 records inside the area are mapped. With <code>distribution = "global"</code>, all
 available georeferenced records are mapped and the boundary, when there is
 one, is kept as a reference outline.</p>
-<p>When <code>crop_box</code> is combined with <code>kml</code> or <code>crop_area</code>, the boundary is
+<p>When <code>crop_box</code> is combined with <code>crop_vector</code> or <code>crop_area</code>, the boundary is
 clipped to the rectangle and the map is framed on the rectangle, so that
 only the part of the area that falls inside it is shown; the rectangle
 itself is not drawn. For example, <code>crop_area = "EC"</code> maps Ecuador including
@@ -259,25 +306,42 @@ continental part of the country. When <code>crop_box</code> is used alone, the m
 framed on the rectangle and no outline is drawn. Clipping is performed in
 planar longitude/latitude coordinates, so the edges of the rectangle follow
 the meridians and parallels given.</p>
-<p>With <code>source = "gbif"</code> (default), the supplied binomial is first resolved
-as an exact, species-level name in the configured GBIF checklist (COL
-Extended Release by default). Its taxon key and that same checklist key are
-then used for the occurrence query, preventing approximate or higher-rank
-name matches. With <code>source = "local"</code>, GBIF is not contacted and
+<p>For a GBIF source with <code>distribution = "local"</code>, <code>crop_area</code> is sent to GBIF
+as its standardized two-letter <code>country</code> filter when available. A vector or
+rectangle is sent as a WGS 84 spatial predicate in both fast occurrence
+searches and registered downloads. The returned points are then checked
+against the exact package boundary. If a complex vector exceeds GBIF's query
+size limit, its bounding box is used to retrieve candidates before exact
+local filtering. A <code>distribution = "global"</code> map keeps its global query;
+when <code>save_occurrences = TRUE</code>, its saved crop is retrieved separately with
+the spatial filter.</p>
+<p>With <code>source = "web"</code> (default), supply exactly one of <code>species</code> or
+<code>taxon_id</code>. GBIF resolves the binomial as an exact, species-level name or
+validates the COL XR usage key as an exact species-level taxon. Its taxon
+key and that same checklist key are then used for the occurrence query,
+preventing approximate or higher-rank name matches. The accepted name
+determines the output directory, so either input form selects the same
+species export. With <code>source = "local"</code>, GBIF is not contacted and
 records are read from a saved export under <code>sacha_exports</code> in
 <code>directory</code>, in one of two ways set by <code>local_export</code>:</p><ul><li><p><code>"species"</code> (default): the full-extent export of the species
 (<code>sacha_exports/Family_Genus_species</code>), produced by
 <code>save_occurrences = TRUE</code> in <code><a href="gbif_map.html">gbif_map()</a></code> or by
-<code><a href="gbif_save_occurrences.html">gbif_save_occurrences()</a></code>. The area is applied to these records
-exactly as it is applied to records retrieved from GBIF. This is the
-only option compatible with <code>distribution = "global"</code>.</p></li>
+<code><a href="gbif_save_occurrences.html">gbif_save_occurrences()</a></code>. The selected area is applied to these
+records as it is applied to records retrieved from GBIF.</p></li>
 <li><p><code>"crop"</code>: an export previously saved for the same area
 (<code>sacha_exports/Family_Genus_species/Place</code>), which contains the
 filtered records and the stored boundary. It requires
 <code>distribution = "local"</code>. When the export was saved with a <code>crop_box</code>,
 the same <code>crop_box</code> (and therefore the same label) must be supplied to
 identify it.</p></li>
-</ul><p>Interactive maps show the scientific name, year, locality, and observer
+</ul><p>With <code>distribution = "global"</code>, a full-extent species export is used when
+available. If it is absent, compatible cropped exports for the same COL XR
+taxon are found recursively and combined; duplicate records with the same
+GBIF or dataset-occurrence identifier are removed. A single cropped export
+is also accepted. The map's <code>sacha_local_coverage</code> attribute reports whether
+it used a full-extent export or partial local crops. In this mode,
+<code>local_export</code> does not prevent fallback to the widest available local data.</p>
+<p>Interactive maps show the scientific name, year, locality, and observer
 (<code>recordedBy</code>) reported by GBIF for each occurrence. Missing values are
 displayed as unavailable.</p>
 <p>Setting <code>save_occurrences = TRUE</code> stores the records located inside the
@@ -286,17 +350,32 @@ area and its boundary, whatever the value of <code>distribution</code>, in
 <code>Place</code> is the name of the area or, when <code>crop_box</code> is supplied, its label.
 If <code>crop_box</code> is supplied, the stored records and boundary are those inside
 the rectangle; when <code>crop_box</code> is used alone, the stored boundary is the
-rectangle itself. Records are not truncated by <code>limit</code>.
+rectangle itself. The spatial filter is applied before <code>limit</code>. For a global
+GBIF map, saving a crop performs a separate spatially filtered retrieval;
+its <code>metadata.json</code> records the query and, when requested, the DOI for that
+filtered download.
 Three files are written: <code>occurrences.gpkg</code> (records in WGS 84, EPSG:4326),
 <code>boundary.gpkg</code>, and <code>metadata.json</code> (query, retrieval date, coordinate
-reference system, and record count). With <code>distribution = "global"</code> the map
-still shows all records, but only those inside the area are saved; if
+reference system, record count, and, when <code>generate_doi = TRUE</code>, the official
+GBIF download key and DOI). Registered downloads require <code>GBIF_USER</code>,
+<code>GBIF_PWD</code>, and <code>GBIF_EMAIL</code> credentials. With <code>distribution = "global"</code> the map
+still shows its global record set, but only those inside the area are saved; if
 none falls inside, nothing is saved and a warning is issued. When the
-records come from the full-extent local export, the metadata retain the
-original GBIF provenance and add a <code>derived_from</code> entry and the processing
-date, so that a crop produced offline has the same traceability as one
-produced from GBIF. If the records were read from a cropped local export,
-they are already saved and nothing is written.</p>
+records come from the full-extent local export, the metadata retain its
+query, provenance, and any DOI it contains, and add a <code>derived_from</code> entry
+and the processing date, so that a crop produced offline has the same traceability as one
+produced from GBIF. When <code>source = "local"</code>, <code>local_export = "crop"</code>, and
+<code>distribution = "local"</code>, the records are already saved and nothing is written.</p>
+<p>Configure the GBIF account credentials in the current R session with
+<code>Sys.setenv(GBIF_USER = "your_username", GBIF_PWD = "your_password", GBIF_EMAIL = "your_account_email")</code>. To keep them available in future
+sessions, add the same three variables to your personal <code>~/.Renviron</code> file
+and restart R. Do not share or publish that file.</p>
+<p>GBIF uses the Catalogue of Life Extended Release (COL XR) as the taxonomic
+reference for occurrence downloads. By downloading the data, you
+acknowledge GBIF's <a href="https://www.gbif.org/terms/data-user" class="external-link">data-use agreement</a>.
+When citing or referring to registered downloads (<code>generate_doi = TRUE</code>), follow GBIF's
+<a href="https://www.gbif.org/citation-guidelines#occDataDownload" class="external-link">citation guidelines</a>
+and include the DOI assigned to that specific download in every publication.</p>
 <p>Setting <code>export_image = TRUE</code> writes the static map as a PNG file, whatever
 the value of <code>mode</code>, to the same directory as the saved files
 (<code>sacha_exports/Family_Genus_species/Place</code>). With
@@ -308,7 +387,7 @@ lower-case, ASCII-normalised area name or crop label. For example,
 <code>crop_area = "Ecuador"</code> yields
 <code>fig-gbif-map-crop-bidens_andicola-ecuador</code>; the label
 <code>"Ecuador continental"</code> yields
-<code>fig-gbif-map-crop-bidens_andicola-ecuador_continental</code>. A KML map uses its
+<code>fig-gbif-map-crop-bidens_andicola-ecuador_continental</code>. A crop-vector map uses its
 resolved place name. Use the resulting ID as <code>@fig-gbif-map-crop-...</code> in
 report prose; <code>distribution</code>, <code>source</code>, and <code>mode</code> do not change the ID.
 For generated Markdown figures, set <code>results: asis</code> on the Quarto or
@@ -318,7 +397,8 @@ R Markdown chunk.</p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">map</span> <span class="op">&lt;-</span> <span class="fu">gbif_map_crop</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, kml <span class="op">=</span> <span class="st">"Ecuador.kml"</span>, limit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">map</span> <span class="op">&lt;-</span> <span class="fu">gbif_map_crop</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_vector <span class="op">=</span> <span class="st">"Ecuador.kml"</span>, limit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">map_by_key</span> <span class="op">&lt;-</span> <span class="fu">gbif_map_crop</span><span class="op">(</span>taxon_id <span class="op">=</span> <span class="st">"Q2M4"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">map</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map_crop</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"EC"</span>,</span></span>
@@ -334,25 +414,25 @@ R Markdown chunk.</p>
 <span class="r-in"><span>              local_export <span class="op">=</span> <span class="st">"crop"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span></span>
-<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"gbif"</span>, distribution <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"web"</span>, distribution <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span></span>
 <span class="r-in"><span>                  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">82.5</span>, <span class="op">-</span><span class="fl">5.5</span>, <span class="op">-</span><span class="fl">75.0</span>, <span class="fl">1.6</span>,</span></span>
 <span class="r-in"><span>                               <span class="st">"Ecuador continental"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"gbif"</span>, distribution <span class="op">=</span> <span class="st">"global"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
+<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"web"</span>, distribution <span class="op">=</span> <span class="st">"global"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
 <span class="r-in"><span>                  save_occurrences <span class="op">=</span> <span class="cn">TRUE</span>, export_image <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>                  colour <span class="op">=</span> <span class="st">"#1B9E77"</span>, ppp <span class="op">=</span> <span class="fl">300</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>                  colour <span class="op">=</span> <span class="st">"#1B9E77"</span>, dpi <span class="op">=</span> <span class="fl">300</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>                  fig_width <span class="op">=</span> <span class="fl">8</span>, fig_height <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>,</span></span>
 <span class="r-in"><span>                  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">82.5</span>, <span class="op">-</span><span class="fl">5.5</span>, <span class="op">-</span><span class="fl">75.0</span>, <span class="fl">1.6</span>,</span></span>
 <span class="r-in"><span>                               <span class="st">"Ecuador continental"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"gbif"</span>, distribution <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, kml <span class="op">=</span> <span class="st">"study_boundary.kml"</span>,</span></span>
-<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"gbif"</span>, distribution <span class="op">=</span> <span class="st">"local"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
+<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"web"</span>, distribution <span class="op">=</span> <span class="st">"local"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_vector <span class="op">=</span> <span class="st">"study_boundary.kml"</span>,</span></span>
+<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"web"</span>, distribution <span class="op">=</span> <span class="st">"local"</span>, mode <span class="op">=</span> <span class="st">"static"</span>,</span></span>
 <span class="r-in"><span>                  export_image <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, kml <span class="op">=</span> <span class="st">"study_boundary.kml"</span>,</span></span>
+<span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_vector <span class="op">=</span> <span class="st">"study_boundary.shp"</span>,</span></span>
 <span class="r-in"><span>                  crop_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">82.5</span>, <span class="op">-</span><span class="fl">5.5</span>, <span class="op">-</span><span class="fl">75.0</span>, <span class="fl">1.6</span>,</span></span>
 <span class="r-in"><span>                               <span class="st">"study area detail"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"gbif"</span>, distribution <span class="op">=</span> <span class="st">"global"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"web"</span>, distribution <span class="op">=</span> <span class="st">"global"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">gbif_map_crop_md</span><span class="op">(</span><span class="st">"Bidens andicola"</span>, crop_area <span class="op">=</span> <span class="st">"Ecuador"</span>,</span></span>
 <span class="r-in"><span>                  source <span class="op">=</span> <span class="st">"local"</span>, local_export <span class="op">=</span> <span class="st">"species"</span>,</span></span>
 <span class="r-in"><span>                  distribution <span class="op">=</span> <span class="st">"global"</span><span class="op">)</span></span></span>

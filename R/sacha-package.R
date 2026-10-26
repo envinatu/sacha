@@ -102,11 +102,18 @@ utils::globalVariables(c("decimalLongitude", "decimalLatitude"))
 #' iNaturalist image functions, and spatial functions. Each module has its own
 #' settings and validation. Pass settings in named lists so that identically
 #' named options, such as `language`, retain a clear module-specific scope.
-#' With no arguments, the function visibly returns the active configuration
-#' grouped by module. When one or more groups are supplied, only their listed
-#' settings are changed and the resulting configuration is returned invisibly.
+#' The optional top-level source sets one shared retrieval default for
+#' functions that accept a source selector. Its values are "web" and
+#' "local"; if omitted, each function retains its current default. Set it to
+#' NULL to remove the shared override. With no arguments, the function visibly
+#' returns the active configuration grouped by module, together with the
+#' shared source and directory values. The optional `directory` sets the common
+#' base path for functions that read or save files; all of them place their existing
+#' subdirectory structures inside that path. When settings are supplied, only
+#' those settings are changed and the resulting configuration is returned
+#' invisibly.
 #'
-#' The `global` group configures ChecklistBank accessors and taxonomic
+#' The `clb` group configures ChecklistBank-backed accessors and taxonomic
 #' indexation links. Its available fields are `dataset`, `base_url`,
 #' `gbif_base`, `inat_base`, `source_name`, `taxon_url_template`, `language`,
 #' `fetcher`, and `labels`. `dataset` defaults to `"3LXR"`; URL fields must
@@ -119,7 +126,7 @@ utils::globalVariables(c("decimalLongitude", "decimalLatitude"))
 #'
 #' The `inat` group configures iNaturalist requests and image handling. It
 #' accepts `inat_api`, `checklistbank_api`, `catalogue_dataset`, `user_agent`,
-#' `language`, `default_quality_grade`, `default_images_directory`,
+#' `language`, `default_quality_grade`,
 #' `default_image_size`, `default_save_image_size`, `cache_max_entries`,
 #' `request_delay`, `small_download_delay`, `large_download_delay`,
 #' `hourly_media_limit_gb`, and `daily_media_limit_gb`. `default_quality_grade`
@@ -143,10 +150,14 @@ utils::globalVariables(c("decimalLongitude", "decimalLatitude"))
 #' `http_max_tries` must be at least one.
 #'
 #' Settings in different groups remain independent even when they have similar
-#' names. For example, `language` in `global`, `inat`, and `spatial` changes
-#' only that module's default. The global ChecklistBank dataset and API are
+#' names. For example, `language` in `clb`, `inat`, and `spatial` changes only
+#' that module's default. The ChecklistBank dataset and API configured by `clb` are
 #' shared by `sacha_clb.R` and `locations.R`; the iNaturalist
 #' attribution dataset remains independently configurable.
+#' The source selector is distinct from `clb$source_name`, which labels the
+#' configured taxonomic provider. ChecklistBank and ColDP accessors remain
+#' web-backed and do not yet expose a local source; future local support can
+#' use the same "web" / "local" choices.
 #'
 #' @references
 #' ChecklistBank API: <https://api.checklistbank.org/>.
@@ -155,27 +166,45 @@ utils::globalVariables(c("decimalLongitude", "decimalLatitude"))
 #' iNaturalist API recommended practices:
 #' <https://www.inaturalist.org/pages/api+recommended+practices>.
 #'
-#' @param global Optional named list of settings for the ChecklistBank and
+#' @param clb Optional named list of settings for the ChecklistBank and
 #'   taxonomic-indexation module.
 #' @param inat Optional named list of settings for iNaturalist image queries,
 #'   downloads, and cache safeguards.
 #' @param spatial Optional named list of settings for GBIF maps and spatial
 #'   accessors.
-#' @return The nested active configuration. It is returned visibly for a
-#'   query and invisibly after an update.
+#' @param source Optional shared data source for functions that expose a
+#'   source argument: "web" or "local". NULL removes a previously set shared
+#'   override. If omitted, function-specific defaults are preserved.
+#' @param directory Optional shared base directory for functions that read or
+#'   save files. The same path is used for GBIF occurrences and maps,
+#'   iNaturalist images, taxonomic references, and ChecklistBank exports.
+#'   `NULL` removes a previously set shared override. If omitted, each
+#'   function uses the current working directory.
+#' @return The active module configuration and shared source and directory
+#'   overrides. It is returned visibly for a query and invisibly after an
+#'   update.
 #' @seealso [sacha_clear_cache()], [sacha_arg_configure()]
 #' @examples
 #' \donttest{
 #' sacha_configure()
 #' sacha_configure(
-#'   global = list(language = "es", dataset = "COL25"),
+#'   clb = list(language = "es", dataset = "COL25"),
 #'   inat = list(language = "en", default_image_size = "large"),
-#'   spatial = list(default_limit = 500)
+#'   spatial = list(default_limit = 500),
+#'   source = "web",
+#'   directory = "data"
 #' )
+#' sacha_configure(source = NULL)
 #' }
 #' @export
-sacha_configure <- function(global = NULL, inat = NULL, spatial = NULL) {
-  groups <- list(global = global, inat = inat, spatial = spatial)
+sacha_configure <- function(clb = NULL, inat = NULL, spatial = NULL,
+                            source = NULL, directory = NULL) {
+  source_supplied <- !missing(source)
+  directory_supplied <- !missing(directory)
+  if (source_supplied && !is.null(source)) {
+    source <- match.arg(source, c("web", "local"))
+  }
+  groups <- list(clb = clb, inat = inat, spatial = spatial)
   invalid <- names(groups)[!vapply(groups, function(x) {
     is.null(x) || (is.list(x) && (length(x) == 0L || (
       !is.null(names(x)) &&
@@ -188,19 +217,34 @@ sacha_configure <- function(global = NULL, inat = NULL, spatial = NULL) {
     stop("Each configuration group must be NULL or a fully named list.",
          call. = FALSE)
   }
-  if (all(vapply(groups, is.null, logical(1)))) {
+  if (all(vapply(groups, is.null, logical(1))) && !source_supplied &&
+      !directory_supplied) {
     return(list(
-      global = .sacha_global_configure(),
+      clb = .sacha_global_configure(),
       inat = .sacha_inat_configure(),
-      spatial = .sacha_spatial_configure()
+      spatial = .sacha_spatial_configure(),
+      source = if (exists("source", envir = .sacha_arg_defaults,
+                          inherits = FALSE)) {
+        get("source", envir = .sacha_arg_defaults, inherits = FALSE)
+      } else {
+        NULL
+      },
+      directory = if (exists("directory", envir = .sacha_arg_defaults,
+                             inherits = FALSE)) {
+        get("directory", envir = .sacha_arg_defaults, inherits = FALSE)
+      } else {
+        NULL
+      }
     ))
   }
 
   old_dataset <- .sacha_global_config$dataset
   old_base_url <- .sacha_global_config$base_url
-  if (!is.null(global)) do.call(.sacha_global_configure, global)
+  if (!is.null(clb)) do.call(.sacha_global_configure, clb)
   if (!is.null(inat)) do.call(.sacha_inat_configure, inat)
   if (!is.null(spatial)) do.call(.sacha_spatial_configure, spatial)
+  if (source_supplied) sacha_arg_configure(source = source)
+  if (directory_supplied) sacha_arg_configure(directory = directory)
 
   if (!identical(old_dataset, .sacha_global_config$dataset) ||
       !identical(old_base_url, .sacha_global_config$base_url)) {
@@ -208,9 +252,21 @@ sacha_configure <- function(global = NULL, inat = NULL, spatial = NULL) {
   }
 
   invisible(list(
-    global = .sacha_global_configure(),
+    clb = .sacha_global_configure(),
     inat = .sacha_inat_configure(),
-    spatial = .sacha_spatial_configure()
+    spatial = .sacha_spatial_configure(),
+    source = if (exists("source", envir = .sacha_arg_defaults,
+                        inherits = FALSE)) {
+      get("source", envir = .sacha_arg_defaults, inherits = FALSE)
+    } else {
+      NULL
+    },
+    directory = if (exists("directory", envir = .sacha_arg_defaults,
+                           inherits = FALSE)) {
+      get("directory", envir = .sacha_arg_defaults, inherits = FALSE)
+    } else {
+      NULL
+    }
   ))
 }
 
@@ -246,12 +302,12 @@ sacha_configure <- function(global = NULL, inat = NULL, spatial = NULL) {
   }), use.names = FALSE)
   report_arguments <- c(
     "user_id", "number_observations", "observation_id", "image_size",
-    "verify_local", "images_directory", "quality_grade", "place_id",
+    "verify_local", "quality_grade", "place_id",
     "catalogue_dataset", "observer_name", "save_images", "export_comp",
     "refresh", "ncol", "word_subfigure_width", "latex_subfigure_width",
-    "identifier", "rank", "save_bib", "bib_dir", "kml", "crop_area",
+    "identifier", "rank", "save_bib", "kml", "crop_area",
     "crop_box", "limit", "mode", "save_occurrences", "export_image",
-    "directory", "colour", "dpi", "ppp", "overwrite", "distribution",
+    "colour", "dpi", "overwrite", "distribution",
     "fig_width", "fig_height", "local_export"
   )
   unique(c(formal_names, report_arguments))
@@ -271,19 +327,19 @@ sacha_configure <- function(global = NULL, inat = NULL, spatial = NULL) {
 #' taxonomic, spatial, iNaturalist, and report accessors. For report functions,
 #' defaults for arguments forwarded through `...` are also applied unless the
 #' report call or its forwarded arguments provide a value explicitly. Repeated
-#' names are rejected to avoid ambiguous settings. The meaning and accepted
-#' values remain function-specific: for example, `source = "local"` applies
-#' to both GBIF and iNaturalist functions, while `"web"` is accepted by
-#' iNaturalist and reports but a direct GBIF query uses `"gbif"` for its web
-#' source.
+#' names are rejected to avoid ambiguous settings. Wherever functions expose
+#' a retrieval source, its accepted values are consistently `"web"` and
+#' `"local"`. The exact behavior depends on the function. ChecklistBank and
+#' ColDP accessors remain web-backed and do not yet expose this selector; a
+#' future local backend can follow the same choices.
 #'
-#' Supported argument names are `bib_dir`, `catalogue_dataset`, `colour`,
+#' Supported argument names are `catalogue_dataset`, `colour`,
 #' `crop_area`, `crop_box`, `dataset`, `directory`, `distribution`, `dpi`,
 #' `export_comp`, `export_image`, `fig_height`, `fig_width`, `identifier`,
-#' `image_size`, `images_directory`, `include_auxiliary`, `kml`, `language`,
+#' `image_size`, `include_auxiliary`, `kml`, `language`,
 #' `latex_subfigure_width`, `limit`, `local_export`, `mode`, `ncol`,
 #' `number_observations`, `observation_id`, `observer_name`, `overwrite`,
-#' `place_id`, `ppp`, `quality_grade`, `rank`, `refresh`, `save_bib`,
+#' `place_id`, `quality_grade`, `rank`, `refresh`, `save_bib`,
 #' `save_images`, `save_occurrences`, `source`, `species`, `user_id`,
 #' `verify_local`, `word_subfigure_width`, and `zoom_static`.
 #'
@@ -324,6 +380,9 @@ sacha_arg_configure <- function(...) {
   if (length(unknown)) {
     stop("Unsupported shared argument(s): ", paste(unknown, collapse = ", "),
          call. = FALSE)
+  }
+  if ("source" %in% names(values) && !is.null(values$source)) {
+    values$source <- match.arg(values$source, c("web", "local"))
   }
   for (name in names(values)) {
     value <- values[[name]]
@@ -383,7 +442,6 @@ sacha_arg_configure <- function(...) {
   .sacha_inat_defaults$user_agent <- "sacha-r-package/1.0 (iNaturalist image client)"
   .sacha_inat_defaults$language <- "en"
   .sacha_inat_defaults$default_quality_grade <- "research"
-  .sacha_inat_defaults$default_images_directory <- "."
   .sacha_inat_defaults$default_image_size <- "medium"
   .sacha_inat_defaults$default_save_image_size <- "medium"
   .sacha_inat_defaults$cache_max_entries <- 200L
@@ -417,7 +475,7 @@ sacha_arg_configure <- function(...) {
 #' @examples
 #' \donttest{
 #' sacha_configure(
-#'   global = list(language = "es"),
+#'   clb = list(language = "es"),
 #'   inat = list(default_image_size = "large")
 #' )
 #' sacha_arg_configure(species = "Bidens andicola", source = "local")

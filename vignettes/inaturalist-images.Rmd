@@ -1,13 +1,13 @@
 ---
-title: "04. iNaturalist observation photographs"
+title: "iNaturalist observation photographs with sacha"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{04. iNaturalist observation photographs}
+  %\VignetteIndexEntry{03. iNaturalist observation photographs}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, eval=FALSE}
 library(sacha)
 ```
 
@@ -17,20 +17,28 @@ library(sacha)
 
 The interactive `inat_images()` function prints metadata to the console and displays an image composition in the graphics viewer. `inat_images_md()` generates markup for Quarto or R Markdown documents. Both accept the same selection criteria and save options; the Markdown variant also provides layout controls for subfigures.
 
-Examples that request observations or write files are marked not to run when the vignette is built. This prevents requests and media downloads during `R CMD build` or `R CMD check`.
+Start with a web query and the default number of observations, image size, language, and quality grade. The username narrows the search to the same observer used in the examples below.
+
+```{r, eval=FALSE}
+inat_images("Bidens andicola", user_id = "marceloamores")
+inat_images_md("Bidens andicola", user_id = "marceloamores")
+```
+
+Service and retrieval examples are displayed but not evaluated when the vignette is built. When a matching local record is available, `source = "local"` reads its saved metadata and image without querying iNaturalist or ChecklistBank; an insufficient local match raises an error instead of falling back to the web.
 
 # Selecting observations and images
 
 Common arguments include:
 
-- `species`: scientific name; `observation_id` can be used instead.
+- `species`: scientific name; `taxon_id`: iNaturalist taxon ID for direct taxon selection.
+- `observation_id`: selects a specific observation.
 - `number_observations`: maximum number of observations; defaults to 1.
 - `quality_grade`: `"research"` excludes Casual observations; `"needs_id"` selects observations awaiting identification; `"casual"` explicitly allows Casual observations.
 - `place_id` and `user_id`: optional place and observer filters.
 - `image_size`: `"small"`, `"square"`, `"medium"`, `"large"`, or `"original"`; defaults to `"medium"`.
 - `language` and `observer_name`: caption language and an optional replacement for the displayed observer name.
 - `catalogue_dataset`: ChecklistBank dataset used to complete the taxonomic authorship of observations.
-- `images_directory`: base directory for finding or saving images, metadata, and compositions.
+- `directory`: base directory for finding or saving images, metadata, and compositions under `sacha_exports`.
 - `source`: `"web"` queries API v2; `"local"` reads saved files.
 - `verify_local = TRUE`: first tries to satisfy the request from the complete local file and queries the API if that file is insufficient.
 - `refresh = TRUE`: avoids reusing a cached query result.
@@ -40,20 +48,17 @@ Common arguments include:
 ```{r, eval=FALSE}
 inat_images(
   species = "Bidens andicola",
-  number_observations = 2,
-  source = "web",
-  quality_grade = "research",
-  image_size = "medium",
-  language = "en"
+  user_id = "marceloamores",
+  number_observations = 3,
+  image_size = "large",
+  language = "es"
 )
 
 inat_images_md(
   species = "Bidens andicola",
-  number_observations = 2,
-  source = "web",
-  ncol = 2,
-  word_subfigure_width = "3in",
-  latex_subfigure_width = "86%"
+  user_id = "marceloamores",
+  language = "es",
+  ncol = 1
 )
 ```
 
@@ -65,49 +70,88 @@ The license for a photograph and the license for an observation are separate fie
 
 Having a license does not remove its conditions. Check whether it permits the intended use, and retain attribution and comply with any restrictions on commercial use, share-alike requirements, and derivative works. Generated attribution does not replace review of each image's terms.
 
-# Local storage and image composition
+# Saving images from the web
 
-`inat_save_images()` downloads the primary image and, by default, auxiliary images for the selected observations. It saves JSON metadata alongside the files under `sacha_exports/Family_Genus_species/inat`. These local files can be reused with `source = "local"`. Set `include_auxiliary = FALSE` to save only the primary image; `overwrite` controls whether existing files are replaced.
+`inat_save_images()` downloads the primary image for each selected observation and saves JSON metadata alongside the files under `sacha_exports/Family_Genus_species/inat`. The same records can then be read with `source = "local"`. Set `include_auxiliary = TRUE` to save auxiliary images as well; the default is `FALSE`.
 
-The `save_images = TRUE` argument in `inat_images()` and `inat_images_md()` saves images during the same query. Images and metadata are then available to later local calls. `export_comp = TRUE` saves only the composition PNG; it does not export the source images or their metadata again. Image composition requires the optional `magick` package.
+You can save images in a separate step or during an image query. Both examples use the default image size and save location.
 
 ```{r, eval=FALSE}
-inat_save_images(
-  species = "Bidens andicola",
-  number_observations = 2,
-  image_size = "medium",
-  include_auxiliary = TRUE
-)
-
+inat_save_images("Bidens andicola", user_id = "marceloamores")
 inat_images(
-  species = "Bidens andicola",
-  source = "local",
-  number_observations = 2,
+  "Bidens andicola",
+  user_id = "marceloamores",
+  save_images = TRUE
+)
+```
+
+`save_images = TRUE` downloads the selected image files and metadata during the query. `export_comp = TRUE` also writes the composition as a PNG; it does not save the source images by itself. Composition export requires the optional `magick` package.
+
+```{r, eval=FALSE}
+inat_images(
+  "Bidens andicola",
+  user_id = "marceloamores",
+  save_images = TRUE,
   export_comp = TRUE
 )
 
 inat_images_md(
-  species = "Bidens andicola",
-  source = "web",
-  number_observations = 2,
+  "Bidens andicola",
+  user_id = "marceloamores",
   save_images = TRUE,
   export_comp = TRUE,
-  ncol = 2
+  ncol = 1
 )
 ```
 
-A local query requires a local file that covers the requested filters. `verify_local = TRUE` can fall back to the web if the file does not satisfy the request. For fully predictable rendering, verify and archive the observations, images, and metadata in advance.
+# Reusing images locally
+
+A local query needs files that cover the requested species and filters. `source = "local"` uses those files without contacting iNaturalist; it reports an error if the saved records do not match.
+
+```{r, eval=FALSE}
+inat_images("Bidens andicola", user_id = "marceloamores", source = "local")
+inat_images_md("Bidens andicola", user_id = "marceloamores", source = "local")
+```
+
+If you want to check local files first and query the web when they are insufficient, use `verify_local = TRUE` with `source = "web"`:
+
+```{r, eval=FALSE}
+inat_images(
+  "Bidens andicola",
+  user_id = "marceloamores",
+  source = "web",
+  verify_local = TRUE
+)
+```
+
+`directory` changes the base folder used to find or save images, metadata, and compositions. A local read from a different folder must point to the folder that contains the saved export.
+
+```{r, eval=FALSE}
+inat_save_images(
+  "Bidens andicola",
+  user_id = "marceloamores",
+  directory = "sacha_data",
+  include_auxiliary = TRUE
+)
+
+inat_images(
+  "Bidens andicola",
+  user_id = "marceloamores",
+  source = "local",
+  directory = "sacha_data"
+)
+```
 
 # Use in documents
 
-In a Quarto or R Markdown chunk, `inat_images_md()` creates a figure with subfigures and captions containing the scientific name, locality, date, observer, photo license, and observation URL. Set `results='asis'` so the rendered document interprets the emitted markup.
+In Quarto or R Markdown, use `inat_images_md()` to create a figure with subfigures and captions containing the scientific name, locality, date, observer, photo license, and observation URL. Set `results='asis'` so the document interprets the generated markup. Use the local source for a repeatable render after saving and reviewing the selected images.
 
-```{r, eval=FALSE, results='asis', echo=FALSE}
+```{r, eval=FALSE, results='asis', echo=TRUE}
 inat_images_md(
   "Bidens andicola",
+  user_id = "marceloamores",
   source = "local",
-  number_observations = 2,
-  ncol = 2
+  export_comp = TRUE
 )
 ```
 

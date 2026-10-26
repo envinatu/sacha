@@ -4,7 +4,13 @@
 \alias{sacha_report}
 \title{Compile a complete species report}
 \usage{
-sacha_report(species, source = c("local", "web"), language = NULL, ...)
+sacha_report(
+  species,
+  source = c("local", "web"),
+  language = NULL,
+  directory = getwd(),
+  ...
+)
 }
 \arguments{
 \item{species}{A scientific name in the form \code{"Genus species"}.}
@@ -19,14 +25,19 @@ indexation links.}
 \item{language}{Optional language code forwarded to accessors that support
 localized output. \code{NULL} follows each module's active language setting.}
 
+\item{directory}{Common base directory for file-based package functions.
+GBIF occurrences and maps, iNaturalist images, and saved references use
+their existing subdirectories under this path. Defaults to the current
+working directory; it can also be set with \code{\link[=sacha_configure]{sacha_configure()}}.}
+
 \item{...}{Named arguments forwarded to the relevant underlying functions.
 Supported names are \code{user_id}, \code{number_observations}, \code{observation_id},
-\code{image_size}, \code{verify_local}, \code{images_directory}, \code{quality_grade},
+\code{image_size}, \code{verify_local}, \code{quality_grade},
 \code{place_id}, \code{catalogue_dataset}, \code{observer_name}, \code{save_images},
 \code{export_comp}, \code{refresh}, \code{ncol}, \code{word_subfigure_width},
-\code{latex_subfigure_width}, \code{identifier}, \code{rank}, \code{save_bib}, \code{bib_dir},
+\code{latex_subfigure_width}, \code{identifier}, \code{rank}, \code{save_bib},
 \code{kml}, \code{crop_area}, \code{crop_box}, \code{limit}, \code{mode}, \code{save_occurrences},
-\code{export_image}, \code{directory}, \code{colour}, \code{dpi}, \code{ppp}, \code{overwrite},
+\code{export_image}, \code{colour}, \code{static_legend_position}, \code{dpi}, \code{overwrite},
 \code{distribution}, \code{fig_width}, \code{fig_height}, and \code{local_export}. Their
 choices, defaults, and effects are documented by the corresponding
 accessors \code{\link[=inat_images_md]{inat_images_md()}}, \code{\link[=indexations_md]{indexations_md()}},
